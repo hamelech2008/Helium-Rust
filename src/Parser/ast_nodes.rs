@@ -31,10 +31,7 @@ pub mod term
     {
         pub fn new(term: Terms) -> Self
         {
-            Self
-            {
-                var: term
-            }
+            Self { var: term }
         }
     }
 }
@@ -43,7 +40,7 @@ pub mod term
 pub mod expr
 {
     use crate::parser::ast_nodes::term;
-    
+
 
     #[derive(Clone, Debug)]
     pub enum BinOp { Addition, Subtraction, Division, Multiplication }
@@ -84,10 +81,7 @@ pub mod expr
     {
         pub fn new(expr: Exprs) -> Self
         {
-            Self
-            {
-                var: expr
-            }
+            Self { var: expr }
         }
 
         pub fn get_var(&self) -> &Exprs
@@ -127,10 +121,12 @@ pub mod stmt
     {
         pub fn new(stmt_type: Stmts) -> Self
         {
-            Self
-            {
-                var: stmt_type
-            }
+            Self { var: stmt_type }
+        }
+
+        pub fn get_var(&self) -> &Stmts
+        {
+            &self.var
         }
     }
 }
@@ -146,14 +142,16 @@ impl NodeProg
 {
     pub fn new() -> Self
     {
-        Self
-        {
-            stmts: Vec::new()
-        }
+        Self { stmts: Vec::new() }
     }
 
     pub fn add_stmt(&mut self, stmt: NodeStmt)
     {
         self.stmts.push(stmt);
+    }
+
+    pub fn get_stmts(&self) -> &Vec<NodeStmt>
+    {
+        &self.stmts
     }
 }

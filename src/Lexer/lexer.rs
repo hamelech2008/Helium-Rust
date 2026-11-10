@@ -96,6 +96,10 @@ impl Lexer
             {
                 self.add_token(TokenType::Multiplication, m);
             }
+            else if let Some(m) = caps.name("division")
+            {
+                self.add_token(TokenType::Division, m);
+            }
         }
     }
 

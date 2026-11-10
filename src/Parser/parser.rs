@@ -1,4 +1,4 @@
-mod ast_nodes;
+pub mod ast_nodes;
 
 use std::process::exit;
 use crate::lexer::{binary_prec};
