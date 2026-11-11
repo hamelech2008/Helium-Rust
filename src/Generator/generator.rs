@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::process::exit;
-use crate::parser::ast_nodes::NodeProg;
+use crate::parser::ast_nodes::{NodeProg, NodeScope};
 use crate::parser::ast_nodes::expr::{BinOp, Exprs, NodeBinExpr, NodeExpr};
-use crate::parser::ast_nodes::stmt::{NodeStmt, Stmts};
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtDec, NodeStmtIf, Stmts};
 use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, NodeTermIdent, NodeTermIntLiteral, Terms};
 mod instructions;
 
@@ -12,7 +12,8 @@ pub struct Generator
     prog: NodeProg,
     output: String,
     stack_size: u32,
-    vars: HashMap<String, u32>
+    vars: HashMap<String, u32>,
+    label_counter: u32
 }
 
 
@@ -25,7 +26,8 @@ impl Generator
             prog,
             output: String::with_capacity(4096),
             stack_size: 1,
-            vars: HashMap::new()
+            vars: HashMap::new(),
+            label_counter: 0
         }
     }
 
@@ -49,16 +51,40 @@ impl Generator
     {
         match &stmt.get_var()
         {
-            Stmts::NodeStmtDec(node_dec) =>
-                {
-                    if self.vars.contains_key(&node_dec.ident.data)
-                    {
-                        exit(0); // TODO: replace with error expected
-                    }
-                    self.vars.insert(node_dec.ident.data.to_string(), self.stack_size);
-                    self.gen_expr(&node_dec.expr);
-                },
+            Stmts::NodeStmtDec(node_dec) => self.gen_dec_stmt(node_dec),
+            Stmts::NodeStmtIf(node_if) => self.gen_if_stmt(node_if),
             _ => exit(0) // TODO: replace with error expected
+        }
+    }
+
+    fn gen_dec_stmt(&mut self, node_dec: &NodeStmtDec)
+    {
+        if self.vars.contains_key(&node_dec.ident.data)
+        {
+            exit(0); // TODO: replace with error expected
+        }
+        self.vars.insert(node_dec.ident.data.to_string(), self.stack_size);
+        self.gen_expr(&node_dec.expr);
+    }
+
+    fn gen_if_stmt(&mut self, node_if: &NodeStmtIf)
+    {
+        let label = self.gen_label();
+        self.gen_expr(node_if.get_expr());
+
+        instructions::testq(self, "%rax");
+        instructions::jz(self, &label);
+
+        self.gen_scope(node_if.get_scope());
+
+        instructions::insert_label(self, &label);
+    }
+
+    fn gen_scope(&mut self, node_scope: &NodeScope)
+    {
+        for stmt in node_scope.get_stmts()
+        {
+            self.gen_stmt(stmt);
         }
     }
 
@@ -118,6 +144,7 @@ impl Generator
         match bin_expr.get_op()
         {
             BinOp::Addition => self.gen_bin_expr_add(bin_expr),
+            BinOp::Subtraction => self.gen_bin_expr_sub(bin_expr),
             BinOp::Multiplication => self.gen_bin_expr_mul(bin_expr),
             BinOp::Division => self.gen_bin_expr_div(bin_expr),
             _ => exit(0) // TODO: replace with error expected
@@ -133,6 +160,17 @@ impl Generator
         instructions::addq(self, "%rbx", "%rax");
 
     }
+
+    fn gen_bin_expr_sub(&mut self, bin_expr_add: &NodeBinExpr)
+    {
+        self.gen_expr(bin_expr_add.get_rhs());
+        self.gen_expr(bin_expr_add.get_lhs());
+        instructions::pop(self, "%rax");
+        instructions::pop(self, "%rbx");
+        instructions::subq(self, "%rbx", "%rax");
+
+    }
+
     fn gen_bin_expr_mul(&mut self, bin_expr_mul: &NodeBinExpr)
     {
         self.gen_expr(bin_expr_mul.get_rhs());
@@ -146,7 +184,12 @@ impl Generator
 
 
     // helper functions
-
+    fn gen_label(&mut self) -> String
+    {
+        let label = format!("L{}", self.label_counter);
+        self.label_counter += 1;
+        label
+    }
 
 }
 

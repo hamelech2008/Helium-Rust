@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 #[path = "Lexer/lexer.rs"]
 mod lexer;
 
@@ -9,9 +11,10 @@ mod generator;
 
 fn main()
 {
+    let start = Instant::now();
     let source_code : String = String::from(
         "dec a = 10;\
-         if (1 + 1) {}\
+         if (1 + 1) {dec x = 1 - 1;}\
          ");
     let mut lexer = lexer::Lexer::new();
     lexer.tokenize(&source_code);
@@ -22,5 +25,7 @@ fn main()
     let generator = generator::Generator::new(node_prog);
     let output = generator.generate_prog();
 
+    let elapsed = start.elapsed();
+    println!("Execution time: {:?}", elapsed);
     println!("{output}");
 }

@@ -100,6 +100,10 @@ impl Lexer
             {
                 self.add_token(TokenType::Addition, m);
             }
+            else if let Some(m) = caps.name("subtraction")
+            {
+                self.add_token(TokenType::Subtraction, m);
+            }
             else if let Some(m) = caps.name("multiplication")
             {
                 self.add_token(TokenType::Multiplication, m);

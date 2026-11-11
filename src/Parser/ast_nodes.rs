@@ -173,6 +173,16 @@ pub mod stmt
                 scope
             }
         }
+
+        pub fn get_expr(&self) -> &NodeExpr
+        {
+            &self.expr
+        }
+
+        pub fn get_scope(&self) -> &NodeScope
+        {
+            &self.scope
+        }
     }
 
     #[derive(Debug, Clone)]
@@ -214,6 +224,11 @@ impl NodeScope
     pub fn push_stmt(&mut self, stmt: NodeStmt)
     {
         self.stmts.push(stmt);
+    }
+    
+    pub fn get_stmts(&self) -> &Vec<NodeStmt>
+    {
+        &self.stmts
     }
 }
 

@@ -122,21 +122,17 @@ impl Parser
             let expr_rhs = self.parse_expr(next_min_prec);
             if expr_rhs.is_none() || op.is_none() {exit(1);} // TODO: replace with error expected
 
-            match op.unwrap().token_type
+
+            let bin_op = match op.unwrap().token_type
             {
-                TokenType::Addition =>
-                    {
-                        let add = NodeBinExpr::new(expr_lhs.clone(), expr_rhs.unwrap(),BinOp::Addition);
-                        expr_lhs.set_var(Exprs::BinExpr(add));
-                    },
-                TokenType::Multiplication =>
-                    {
-                        let mul = NodeBinExpr::new(expr_lhs.clone(), expr_rhs.unwrap(),BinOp::Multiplication);
-                        expr_lhs.set_var(Exprs::BinExpr(mul));                    }
+                TokenType::Addition => BinOp::Addition,
+                TokenType::Subtraction => BinOp::Subtraction,
+                TokenType::Multiplication => BinOp::Multiplication,
+                _ => exit(1) // TODO: replace with error expected
+            };
 
-
-                _ => {}
-            }
+            let bin_node = NodeBinExpr::new(expr_lhs.clone(), expr_rhs.unwrap(), bin_op);
+            expr_lhs.set_var(Exprs::BinExpr(bin_node));
         }
         Some(expr_lhs)
     }
@@ -146,35 +142,51 @@ impl Parser
     {
         if let Some(literal) = self.try_consume(TokenType::IntLiteral)
         {
-            let node_term_literal = ast_nodes::term::NodeTermIntLiteral
-            {
-                value: literal.clone()
-            };
-
-            let term = NodeTerm::new(Terms::IntLiteral(node_term_literal));
-
-            return Some(term);
+            return self.parse_int_literal_term(&literal);
         }
+
         if let Some(ident) = self.try_consume(TokenType::Ident)
         {
-            let node_term_ident = ast_nodes::term::NodeTermIdent
-            {
-                ident
-            };
-
-            let term = NodeTerm::new(Terms::Ident(node_term_ident));
-            return Some(term);
+            return self.parse_ident_term(ident);
         }
 
-        if let Some(open_bracket) = self.try_consume(TokenType::LeftBracket) &&
+        if let Some(_open_bracket) = self.try_consume(TokenType::LeftBracket) &&
             let Some(expr) = self.parse_expr(0)
         {
-            self.try_consume(TokenType::RightBracket); // consume the ')' token
-            let term_bracket = Terms::Bracket(NodeTermBracket::new(expr));
-            return Some(NodeTerm::new(term_bracket));
+            return self.parse_bracket_term(expr);
         }
 
         None
+    }
+
+    fn parse_int_literal_term(&self, literal: &Token) -> Option<NodeTerm>
+    {
+        let node_term_literal = ast_nodes::term::NodeTermIntLiteral
+        {
+            value: literal.clone()
+        };
+
+        let term = NodeTerm::new(Terms::IntLiteral(node_term_literal));
+
+        Some(term)
+    }
+
+    fn parse_ident_term(&self, ident: Token) -> Option<NodeTerm>
+    {
+        let node_term_ident = ast_nodes::term::NodeTermIdent
+        {
+            ident
+        };
+
+        let term = NodeTerm::new(Terms::Ident(node_term_ident));
+        Some(term)
+    }
+
+    fn parse_bracket_term(&mut self, expr: NodeExpr) -> Option<NodeTerm>
+    {
+        self.try_consume(TokenType::RightBracket); // consume the ')' token
+        let term_bracket = Terms::Bracket(NodeTermBracket::new(expr));
+        Some(NodeTerm::new(term_bracket))
     }
 
 
