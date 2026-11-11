@@ -2,10 +2,11 @@ pub mod ast_nodes;
 
 use std::process::exit;
 use crate::lexer::{binary_prec};
-use crate::parser::ast_nodes::NodeProg;
+use crate::parser::ast_nodes::{NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::ast_nodes::expr::{BinOp, Exprs, NodeBinExpr, NodeExpr};
-use crate::parser::ast_nodes::stmt::NodeStmt;
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtIf};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, Terms};
 
 pub struct Parser
 {
@@ -50,7 +51,7 @@ impl Parser
             let ident = match self.try_consume(TokenType::Ident)
             {
                 Some(i) => i.clone(),
-                None => exit(0) // TODO: replace with error expected
+                None => exit(1) // TODO: replace with error expected
             };
             self.try_consume(TokenType::Equals); // consume '=' token
             // consume rhs expression (for e.g: dec var = 20 + 20; - 20 + 20 is the expression)
@@ -70,6 +71,23 @@ impl Parser
             }
 
         }
+
+       if self.try_peek(TokenType::If) && self.try_peek_offset(TokenType::LeftBracket, 1)
+       {
+           self.try_consume(TokenType::If); // consume the 'if' token
+           self.try_consume(TokenType::LeftBracket); // consume the '(' token
+
+
+           if let Some(expr) = self.parse_expr(0)
+           {
+               self.try_consume(TokenType::RightBracket); // consume the ')' token
+               let scope = self.parse_scope();
+               let node_if = NodeStmtIf::new(expr, scope);
+
+               let stmt = NodeStmt::new(ast_nodes::stmt::Stmts::NodeStmtIf(node_if));
+               return Some(stmt);
+           }
+       }
         None
     }
 
@@ -81,7 +99,7 @@ impl Parser
         let term_lhs = match term_lhs
         {
             Some(term) => term,
-            None => exit(0)
+            None => exit(1)
         };
 
         let mut expr_lhs = NodeExpr::new(Exprs::Term(term_lhs));
@@ -102,7 +120,7 @@ impl Parser
             let next_min_prec = prec.unwrap() + 1;
 
             let expr_rhs = self.parse_expr(next_min_prec);
-            if expr_rhs.is_none() || op.is_none() {exit(0);} // TODO: replace with error expected
+            if expr_rhs.is_none() || op.is_none() {exit(1);} // TODO: replace with error expected
 
             match op.unwrap().token_type
             {
@@ -124,7 +142,7 @@ impl Parser
     }
 
 
-    fn parse_term(&mut self) -> Option<ast_nodes::term::NodeTerm>
+    fn parse_term(&mut self) -> Option<NodeTerm>
     {
         if let Some(literal) = self.try_consume(TokenType::IntLiteral)
         {
@@ -133,19 +151,54 @@ impl Parser
                 value: literal.clone()
             };
 
-            let term =
-                ast_nodes::term::NodeTerm::new(ast_nodes::term::Terms::IntLiteral(node_term_literal));
+            let term = NodeTerm::new(Terms::IntLiteral(node_term_literal));
 
             return Some(term);
         }
+        if let Some(ident) = self.try_consume(TokenType::Ident)
+        {
+            let node_term_ident = ast_nodes::term::NodeTermIdent
+            {
+                ident
+            };
+
+            let term = NodeTerm::new(Terms::Ident(node_term_ident));
+            return Some(term);
+        }
+
+        if let Some(open_bracket) = self.try_consume(TokenType::LeftBracket) &&
+            let Some(expr) = self.parse_expr(0)
+        {
+            self.try_consume(TokenType::RightBracket); // consume the ')' token
+            let term_bracket = Terms::Bracket(NodeTermBracket::new(expr));
+            return Some(NodeTerm::new(term_bracket));
+        }
+
         None
     }
 
 
 
+    fn parse_scope(&mut self) -> NodeScope
+    {
+        if self.try_consume(TokenType::LeftCurly).is_none() {exit(1)} // TODO: replace with error expected
+
+        let mut node_scope = NodeScope::new();
+
+        while let Some(stmt) = self.parse_stmt()
+        {
+            node_scope.push_stmt(stmt);
+        }
+
+        self.try_consume(TokenType::RightCurly);
+
+        node_scope
+    }
+
+
     // Helper functions
 
-    // return the value (if exists) of index
+    // returns the value (if exists) of index
     fn peek(&self) -> Option<&Token>
     {
         self.peek_offset(0)
@@ -171,7 +224,7 @@ impl Parser
         let token_value = match self.peek_offset(offset)
         {
             Some(t) => t,
-            None => exit(0) // TODO: replace with an error expected function
+            None => exit(1) // TODO: replace with an error expected function
         };
 
         self.peek_offset(offset).is_some() && token_value.token_type == token_type
@@ -203,7 +256,7 @@ impl Parser
         let token_value = match self.peek()
         {
             Some(t) => t,
-            None => exit(0) // TODO: replace with an error expected function
+            None => exit(1) // TODO: replace with an error expected function
         };
 
         // check for the current token and return it if found (else returns None)

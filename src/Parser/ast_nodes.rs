@@ -5,9 +5,10 @@ use crate::lexer::token::Token;
 pub mod term
 {
     use crate::lexer::token;
+    use crate::parser::ast_nodes::expr::NodeExpr;
 
     #[derive(Debug, Clone)]
-    pub enum Terms { Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral) }
+    pub enum Terms { Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral), Bracket(NodeTermBracket) }
 
     #[derive(Debug, Clone)]
 
@@ -15,11 +16,37 @@ pub mod term
     {
         pub value: token::Token
     }
+    impl NodeTermIntLiteral
+    {
+        pub fn get_value(&self) -> &token::Token
+        {
+            &self.value
+        }
+    }
+
     #[derive(Debug, Clone)]
     pub struct NodeTermIdent
     {
         pub ident: token::Token
     }
+
+    #[derive(Clone, Debug)]
+    pub struct NodeTermBracket
+    {
+        pub expr: Box<NodeExpr>
+    }
+    impl NodeTermBracket
+    {
+        pub fn new(expression: NodeExpr) -> Self
+        {
+            Self {expr: Box::new(expression)}
+        }
+        pub fn get_expr(&self) -> &NodeExpr
+        {
+            &self.expr
+        }
+    }
+
     #[derive(Debug, Clone)]
 
     pub struct NodeTerm
@@ -32,6 +59,11 @@ pub mod term
         pub fn new(term: Terms) -> Self
         {
             Self { var: term }
+        }
+
+        pub fn get_var(&self) -> &Terms
+        {
+            &self.var
         }
     }
 }
@@ -62,6 +94,21 @@ pub mod expr
                 rhs: Box::new(rhs),
                 op
             }
+        }
+
+        pub fn get_op(&self) -> &BinOp
+        {
+            &self.op
+        }
+
+        pub fn get_rhs(&self) -> &NodeExpr
+        {
+            &self.rhs
+        }
+
+        pub fn get_lhs(&self) -> &NodeExpr
+        {
+            &self.lhs
         }
     }
 
@@ -99,19 +146,38 @@ pub mod expr
 // module for statements, for variable creations, assignments, func calls etc...
 pub mod stmt
 {
-    use crate::lexer::token;
-    use crate::parser::ast_nodes::{expr, Token};
-    #[derive(Debug)]
+    use crate::parser::ast_nodes::{expr, Token, NodeScope};
+    use crate::parser::ast_nodes::expr::NodeExpr;
+
+    #[derive(Debug, Clone)]
 
     pub struct NodeStmtDec
     {
-        pub ident: token::Token,
+        pub ident: Token,
         pub expr: expr::NodeExpr
     }
-    #[derive(Debug)]
 
-    pub enum Stmts { NodeStmtDec(NodeStmtDec) }
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
+    pub struct NodeStmtIf
+    {
+        expr: NodeExpr,
+        scope: NodeScope
+    }
+    impl NodeStmtIf
+    {
+        pub fn new(expr: NodeExpr, scope: NodeScope) -> Self
+        {
+            Self
+            {
+                expr,
+                scope
+            }
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum Stmts { NodeStmtDec(NodeStmtDec), NodeStmtIf(NodeStmtIf) }
+    #[derive(Debug, Clone)]
     pub struct NodeStmt
     {
         var : Stmts
@@ -128,6 +194,26 @@ pub mod stmt
         {
             &self.var
         }
+    }
+}
+
+
+
+#[derive(Clone, Debug)]
+pub struct NodeScope
+{
+    stmts: Vec<NodeStmt>
+}
+impl NodeScope
+{
+    pub fn new() -> Self
+    {
+        Self {stmts: Vec::new()}
+    }
+
+    pub fn push_stmt(&mut self, stmt: NodeStmt)
+    {
+        self.stmts.push(stmt);
     }
 }
 

@@ -63,6 +63,10 @@ impl Lexer
         | (?P<multiplication>\*)
         | (?P<subtraction>-)
         | (?P<division>/)
+        | (?P<left_bracket>\()
+        | (?P<right_bracket>\))
+        | (?P<left_curly>\{)
+        | (?P<right_curly>})
         "
         ).unwrap();
 
@@ -75,6 +79,10 @@ impl Lexer
             else if let Some(m) = caps.name("ident")
             {
                 self.add_token(TokenType::Ident, m);
+            }
+            else if let Some(m) = caps.name("if")
+            {
+                self.add_token(TokenType::If, m);
             }
             else if let Some(m) = caps.name("equals")
             {
@@ -100,6 +108,22 @@ impl Lexer
             {
                 self.add_token(TokenType::Division, m);
             }
+            else if let Some(m) = caps.name("left_bracket")
+            {
+                self.add_token(TokenType::LeftBracket, m);
+            }
+            else if let Some(m) = caps.name("right_bracket")
+            {
+                self.add_token(TokenType::RightBracket, m);
+            }
+            else if let Some(m) = caps.name("left_curly")
+            {
+                self.add_token(TokenType::LeftCurly, m);
+            }
+            else if let Some(m) = caps.name("right_curly")
+            {
+                self.add_token(TokenType::RightCurly, m);
+            }
         }
     }
 
@@ -107,7 +131,7 @@ impl Lexer
     {
         self.tokens.push(token::Token {
             token_type: token,
-            data: Some(m.as_str().to_string())
+            data: m.as_str().to_string()
         });
     }
 }

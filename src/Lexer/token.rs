@@ -8,7 +8,7 @@ pub enum TokenType
     Equals, Greater, Lesser, Addition, Multiplication, Subtraction, Division,
     And, Or,
     IntLiteral, StringLiteral,
-    SemiColon
+    SemiColon, LeftBracket, RightBracket, LeftCurly, RightCurly
 }
 
 // token struct containing the type and its data (for e.g: variable names, constant string value, etc...)
@@ -16,5 +16,5 @@ pub enum TokenType
 pub struct Token
 {
     pub token_type: TokenType,
-    pub data: Option<String>
+    pub data: String
 }
