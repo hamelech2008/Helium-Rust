@@ -1,3 +1,5 @@
+use std::{env, fs};
+use std::process::exit;
 use std::time::Instant;
 
 #[path = "Lexer/lexer.rs"]
@@ -11,13 +13,22 @@ mod generator;
 
 fn main()
 {
+
     let start = Instant::now();
-    let source_code : String = String::from(
-        "dec a = 10;\
-         if (1 + 1) {dec x = 1 - 1;}\
-         ");
+
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2
+    {
+        println!("Error: Invalid number of arguments!");
+        exit(1);
+    }
+
+    let file_path = &args[1];
+    let source_code : String = fs::read_to_string(file_path).expect("Could not read file.");
+
     let mut lexer = lexer::Lexer::new();
     lexer.tokenize(&source_code);
+
     let mut parser = parser::Parser::new(lexer.tokens);
     let node_prog = parser.parse();
 

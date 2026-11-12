@@ -82,6 +82,13 @@ pub fn jz(generator: &mut generator::Generator, label: &str)
     generator.output.push_str("\n");
 }
 
+pub fn jmp(generator: &mut generator::Generator, label: &str)
+{
+    generator.output.push_str("\tjmp ");
+    generator.output.push_str(label);
+    generator.output.push_str("\n");
+}
+
 pub fn insert_label(generator: &mut generator::Generator, label: &str)
 {
     generator.output.push_str(label);

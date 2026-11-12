@@ -76,6 +76,10 @@ impl Lexer
             {
                 self.add_token(TokenType::Dec, m);
             }
+            else if let Some(m) = caps.name("for")
+            {
+                self.add_token(TokenType::For, m);
+            }
             else if let Some(m) = caps.name("ident")
             {
                 self.add_token(TokenType::Ident, m);
@@ -83,6 +87,10 @@ impl Lexer
             else if let Some(m) = caps.name("if")
             {
                 self.add_token(TokenType::If, m);
+            }
+            else if let Some(m) = caps.name("else")
+            {
+                self.add_token(TokenType::Else, m);
             }
             else if let Some(m) = caps.name("equals")
             {

@@ -8,9 +8,6 @@ pub mod term
     use crate::parser::ast_nodes::expr::NodeExpr;
 
     #[derive(Debug, Clone)]
-    pub enum Terms { Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral), Bracket(NodeTermBracket) }
-
-    #[derive(Debug, Clone)]
 
     pub struct NodeTermIntLiteral
     {
@@ -47,13 +44,16 @@ pub mod term
         }
     }
 
+
+    #[derive(Debug, Clone)]
+    pub enum Terms { Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral), Bracket(NodeTermBracket) }
+
     #[derive(Debug, Clone)]
 
     pub struct NodeTerm
     {
         var : Terms
     }
-
     impl NodeTerm
     {
         pub fn new(term: Terms) -> Self
@@ -83,7 +83,6 @@ pub mod expr
         rhs: Box<NodeExpr>,
         op: BinOp
     }
-
     impl NodeBinExpr
     {
         pub fn new(lhs: NodeExpr, rhs: NodeExpr, op: BinOp) -> Self
@@ -113,7 +112,6 @@ pub mod expr
     }
 
 
-
     #[derive(Debug, Clone)]
 
     pub enum Exprs { Term(term::NodeTerm), BinExpr(NodeBinExpr) }
@@ -123,7 +121,6 @@ pub mod expr
     {
         var: Exprs
     }
-
     impl NodeExpr
     {
         pub fn new(expr: Exprs) -> Self
@@ -161,7 +158,8 @@ pub mod stmt
     pub struct NodeStmtIf
     {
         expr: NodeExpr,
-        scope: NodeScope
+        scope: NodeScope,
+        else_node: Option<NodeStmtElse>
     }
     impl NodeStmtIf
     {
@@ -170,10 +168,109 @@ pub mod stmt
             Self
             {
                 expr,
-                scope
+                scope,
+                else_node: None
             }
         }
 
+        pub fn set_else(&mut self, node: Option<NodeStmtElse>)
+        {
+            self.else_node = node;
+        }
+        pub fn get_expr(&self) -> &NodeExpr
+        {
+            &self.expr
+        }
+
+        pub fn get_scope(&self) -> &NodeScope
+        {
+            &self.scope
+        }
+
+        pub fn get_else_scope(&self) -> &Option<NodeStmtElse>
+        {
+            &self.else_node
+        }
+    }
+
+
+    #[derive(Debug, Clone)]
+    pub struct NodeStmtElse
+    {
+        scope: NodeScope
+    }
+    impl NodeStmtElse
+    {
+        pub fn new(scope: NodeScope) -> Self
+        {
+            Self {scope}
+        }
+
+        pub fn get_scope(&self) -> &NodeScope
+        {
+            &self.scope
+        }
+    }
+
+
+    #[derive(Debug, Clone)]
+    pub struct NodeStmtAssign
+    {
+        ident: Token,
+        expr: NodeExpr
+    }
+    impl NodeStmtAssign
+    {
+        pub fn new(ident: Token, expr: NodeExpr) -> Self
+        {
+            Self
+            {
+                ident,
+                expr
+            }
+        }
+
+        pub fn get_expr(&self) -> &NodeExpr
+        {
+            &self.expr
+        }
+
+        pub fn get_ident(&self) -> &Token
+        {
+            &self.ident
+        }
+    }
+
+
+    #[derive(Debug, Clone)]
+    pub struct NodeStmtForLoop
+    {
+        init_stmt: Box<NodeStmt>,
+        expr: NodeExpr,
+        stmt: Box<NodeStmt>,
+        scope: NodeScope
+    }
+    impl NodeStmtForLoop
+    {
+        pub fn new(init_stmt: NodeStmt, expr: NodeExpr, stmt: NodeStmt, scope: NodeScope) -> Self
+        {
+            Self
+            {
+                init_stmt: Box::new(init_stmt),
+                stmt: Box::new(stmt),
+                expr,
+                scope
+            }
+        }
+        
+        pub fn get_init_stmt(&self) -> &NodeStmt
+        {
+            &self.init_stmt
+        }
+        pub fn get_stmt(&self) -> &NodeStmt
+        {
+            &self.stmt
+        }
         pub fn get_expr(&self) -> &NodeExpr
         {
             &self.expr
@@ -185,8 +282,14 @@ pub mod stmt
         }
     }
 
+
     #[derive(Debug, Clone)]
-    pub enum Stmts { NodeStmtDec(NodeStmtDec), NodeStmtIf(NodeStmtIf) }
+    pub enum Stmts
+    {
+        NodeStmtDec(NodeStmtDec), NodeStmtIf(NodeStmtIf),
+        NodeStmtElse(NodeStmtElse), NodeStmtAssign(NodeStmtAssign),
+        NodeStmtForLoop(NodeStmtForLoop)
+    }
     #[derive(Debug, Clone)]
     pub struct NodeStmt
     {

@@ -2,11 +2,28 @@ pub mod ast_nodes;
 
 use std::process::exit;
 use crate::lexer::{binary_prec};
-use crate::parser::ast_nodes::{NodeProg, NodeScope};
+use crate::parser::ast_nodes::{stmt, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::ast_nodes::expr::{BinOp, Exprs, NodeBinExpr, NodeExpr};
-use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtIf};
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtElse, NodeStmtIf};
+use crate::parser::ast_nodes::stmt::Stmts::NodeStmtForLoop;
 use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, Terms};
+macro_rules! check_next_tokens {
+    ($self:expr, $($token:expr),+ $(,)?) => {
+        [$($token),+]
+            .iter()
+            .enumerate()
+            .all(|(offset, token)| $self.try_peek_offset(*token, offset as i32))
+    };
+}
+
+macro_rules! error_expected {
+    ($token:expr) =>
+    {
+        eprintln!("Parse Error: expected token '{}' at line <ADD LINE>", $token);
+        exit(-1);
+    }
+}
 
 pub struct Parser
 {
@@ -32,7 +49,7 @@ impl Parser
 
         while self.peek().is_some()
         {
-            if let Some(stmt) = self.parse_stmt() {prog.add_stmt(stmt);}
+            if let Some(stmt) = self.parse_stmt(true) {prog.add_stmt(stmt);}
         }
 
         prog
@@ -40,56 +57,140 @@ impl Parser
 
 
 
-    fn parse_stmt(&mut self) -> Option<NodeStmt>
+    fn parse_stmt(&mut self, expect_semi_colon: bool) -> Option<NodeStmt>
     {
-        if self.try_peek(TokenType::Dec) && self.try_peek_offset(TokenType::Ident, 1)
-            && self.try_peek_offset(TokenType::Equals, 2)
+        // check for a declaration statement
+        if check_next_tokens!(self, TokenType::Dec, TokenType::Ident, TokenType::Equals)
         {
-            self.try_consume(TokenType::Dec); // consume 'dec' token
+            // consume 'dec' token
+            if self.try_consume(TokenType::Dec).is_none() {error_expected!("dec");}
 
             // consume ident value
             let ident = match self.try_consume(TokenType::Ident)
             {
-                Some(i) => i.clone(),
-                None => exit(1) // TODO: replace with error expected
+                Some(ident) => ident,
+                None =>
+                    {
+                        error_expected!("ident");
+                    }
             };
-            self.try_consume(TokenType::Equals); // consume '=' token
+
+            // consume '=' token
+            if self.try_consume(TokenType::Equals).is_none() {error_expected!("=");}
             // consume rhs expression (for e.g: dec var = 20 + 20; - 20 + 20 is the expression)
             if let Some(expr) = self.parse_expr(0)
             {
-                self.try_consume(TokenType::SemiColon); // consume ';' token
+                // consume ';' token
+                if expect_semi_colon
+                {
+                    if self.try_consume(TokenType::SemiColon).is_none()
+                    {
+                        error_expected!(";");
+                    }
+                }
 
                 // generate the declare statement node
-                let node_dec = ast_nodes::stmt::NodeStmtDec
+                let node_dec = stmt::NodeStmtDec
                 {
                     ident,
                     expr
                 };
-                let stmt = NodeStmt::new(ast_nodes::stmt::Stmts::NodeStmtDec(node_dec));
+                let stmt = NodeStmt::new(stmt::Stmts::NodeStmtDec(node_dec));
 
                 return Some(stmt)
             }
 
         }
 
-       if self.try_peek(TokenType::If) && self.try_peek_offset(TokenType::LeftBracket, 1)
-       {
-           self.try_consume(TokenType::If); // consume the 'if' token
-           self.try_consume(TokenType::LeftBracket); // consume the '(' token
+        // check for an if statement
+        if check_next_tokens!(self, TokenType::If, TokenType::LeftBracket)
+        {
+            // consume the 'if' token
+            if self.try_consume(TokenType::If).is_none() {error_expected!("if");}
+            // consume the '(' token
+            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!("(");}
 
 
-           if let Some(expr) = self.parse_expr(0)
-           {
-               self.try_consume(TokenType::RightBracket); // consume the ')' token
-               let scope = self.parse_scope();
-               let node_if = NodeStmtIf::new(expr, scope);
+            if let Some(expr) = self.parse_expr(0)
+            {
+                // consume the ')' token
+                if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
 
-               let stmt = NodeStmt::new(ast_nodes::stmt::Stmts::NodeStmtIf(node_if));
-               return Some(stmt);
-           }
-       }
+                let mut node_if = NodeStmtIf::new(expr, self.parse_scope());
+
+                node_if.set_else(self.parse_else_stmt());
+
+                let stmt = NodeStmt::new(ast_nodes::stmt::Stmts::NodeStmtIf(node_if));
+                return Some(stmt);
+            }
+        }
+
+        // check for an assignment statement
+        if check_next_tokens!(self, TokenType::Ident, TokenType::Equals)
+        {
+            let ident = match self.try_consume(TokenType::Ident)
+            {
+                Some(ident) => ident,
+                None => {error_expected!("ident");}
+            };
+
+            // consume the '=' token
+            if self.try_consume(TokenType::Equals).is_none() {error_expected!("=");}
+
+            if let Some(expr) = self.parse_expr(0)
+            {
+                let node_assign = NodeStmtAssign::new(ident, expr);
+
+                if expect_semi_colon
+                {
+                    // consume the ';' token
+                    if self.try_consume(TokenType::SemiColon).is_none() {error_expected!(";");}
+                }
+
+                let stmt = NodeStmt::new(stmt::Stmts::NodeStmtAssign(node_assign));
+                return Some(stmt);
+            }
+        }
+
+        // check for a for loop statement
+        if check_next_tokens!(self, TokenType::For, TokenType::LeftBracket)
+        {
+            // consume the 'for' token
+            if self.try_consume(TokenType::For).is_none() {error_expected!("for");}
+            // consume the '(' token
+            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!("(");}
+
+            // checks for: (stmt; expr; stmt;) scope
+            if let Some(init_stmt) = self.parse_stmt(true) &&
+                let Some(expr) = self.parse_expr(0)
+            {
+
+                // consume the ';' token
+                if self.try_consume(TokenType::SemiColon).is_none() {error_expected!(";");}
+
+                if let Some(end_stmt) = self.parse_stmt(false)
+                {
+                    // consume the ')' token
+                    if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+
+                    let scope = self.parse_scope();
+                    let node_for = stmt::NodeStmtForLoop::new(init_stmt, expr, end_stmt, scope);
+
+                    let stmt = NodeStmt::new(NodeStmtForLoop(node_for));
+                    return Some(stmt);
+                }
+            }
+        }
         None
     }
+
+    fn parse_else_stmt(&mut self) -> Option<NodeStmtElse>
+    {
+        if self.try_consume(TokenType::Else).is_none() {error_expected!("else");}
+        let else_node = NodeStmtElse::new(self.parse_scope());
+        Some(else_node)
+    }
+
 
     fn parse_expr(&mut self, min_prec: i32) -> Option<NodeExpr>
     {
@@ -104,6 +205,7 @@ impl Parser
 
         let mut expr_lhs = NodeExpr::new(Exprs::Term(term_lhs));
 
+        // loop on the expressions and get the precedence of the current token
         loop
         {
             let curr_token = self.peek();
@@ -116,13 +218,15 @@ impl Parser
             }
             else {break;}
 
+            // get the operation (+, -, /, *...)
             let op = self.consume();
-            let next_min_prec = prec.unwrap() + 1;
+            let next_min_prec = prec.unwrap() + 1; // get the next precedence
 
+            // parse right hand side of the expression
             let expr_rhs = self.parse_expr(next_min_prec);
             if expr_rhs.is_none() || op.is_none() {exit(1);} // TODO: replace with error expected
 
-
+            // get the binary operation
             let bin_op = match op.unwrap().token_type
             {
                 TokenType::Addition => BinOp::Addition,
@@ -140,9 +244,9 @@ impl Parser
 
     fn parse_term(&mut self) -> Option<NodeTerm>
     {
-        if let Some(literal) = self.try_consume(TokenType::IntLiteral)
+        if let Some(int_literal) = self.try_consume(TokenType::IntLiteral)
         {
-            return self.parse_int_literal_term(&literal);
+            return self.parse_int_literal_term(&int_literal);
         }
 
         if let Some(ident) = self.try_consume(TokenType::Ident)
@@ -150,7 +254,7 @@ impl Parser
             return self.parse_ident_term(ident);
         }
 
-        if let Some(_open_bracket) = self.try_consume(TokenType::LeftBracket) &&
+        if  let Some(_open_bracket) = self.try_consume(TokenType::LeftBracket) &&
             let Some(expr) = self.parse_expr(0)
         {
             return self.parse_bracket_term(expr);
@@ -184,7 +288,8 @@ impl Parser
 
     fn parse_bracket_term(&mut self, expr: NodeExpr) -> Option<NodeTerm>
     {
-        self.try_consume(TokenType::RightBracket); // consume the ')' token
+        // consume the ')' token
+        if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
         let term_bracket = Terms::Bracket(NodeTermBracket::new(expr));
         Some(NodeTerm::new(term_bracket))
     }
@@ -193,16 +298,26 @@ impl Parser
 
     fn parse_scope(&mut self) -> NodeScope
     {
-        if self.try_consume(TokenType::LeftCurly).is_none() {exit(1)} // TODO: replace with error expected
+        if self.try_consume(TokenType::LeftCurly).is_none()
+        {
+            if let Some(stmt) = self.parse_stmt(true)
+            {
+                let mut node_scope = NodeScope::new();
+                node_scope.push_stmt(stmt);
+                return node_scope;
+            }
+            exit(1); // TODO: replace with error expected
+        }
 
         let mut node_scope = NodeScope::new();
 
-        while let Some(stmt) = self.parse_stmt()
+        while let Some(stmt) = self.parse_stmt(true)
         {
             node_scope.push_stmt(stmt);
         }
 
-        self.try_consume(TokenType::RightCurly);
+        // consume the "}" token
+        if self.try_consume(TokenType::RightCurly).is_none() {error_expected!("}");}
 
         node_scope
     }
@@ -231,17 +346,20 @@ impl Parser
         }
     }
 
-    fn try_peek_offset(&self, token_type: TokenType, offset: i32) -> bool
+    fn try_peek_offset(&mut self, token_type: TokenType, offset: i32) -> bool
     {
         let token_value = match self.peek_offset(offset)
         {
             Some(t) => t,
-            None => exit(1) // TODO: replace with an error expected function
+            None =>
+                {
+                    exit(1);
+                }
         };
 
         self.peek_offset(offset).is_some() && token_value.token_type == token_type
     }
-    fn try_peek(&self, token_type: TokenType) -> bool
+    fn try_peek(&mut self, token_type: TokenType) -> bool
     {
         self.try_peek_offset(token_type, 0)
     }
@@ -268,14 +386,14 @@ impl Parser
         let token_value = match self.peek()
         {
             Some(t) => t,
-            None => exit(1) // TODO: replace with an error expected function
+            None => { return None; }
         };
 
-        // check for the current token and return it if found (else returns None)
-        if self.peek().is_some() && token_value.token_type == token
+        if token_value.token_type == token
         {
-            self.consume()
+            Some(self.consume().unwrap())
         }
         else {None}
+
     }
 }
