@@ -4,7 +4,7 @@ use std::process::exit;
 use crate::lexer::{binary_prec};
 use crate::parser::ast_nodes::{stmt, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, Operator};
+use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr, Operator, TerneryOp};
 use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtElse, NodeStmtIf};
 use crate::parser::ast_nodes::stmt::Stmts::{NodeStmtForLoop, NodeStmtWhileLoop};
 use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, Terms};
@@ -264,6 +264,7 @@ impl Parser
                 TokenType::EqualsTo => Operator::BinOp(BinOp::EqualsTo),
                 TokenType::And => Operator::LogicOp(LogicOp::And),
                 TokenType::Or => Operator::LogicOp(LogicOp::Or),
+                TokenType::Ternary => Operator::TerneryOp(TerneryOp::Ternery),
 
                 _ => exit(1), // TODO: Replace with proper error handling
             };
@@ -279,6 +280,21 @@ impl Parser
                     {
                         let logic_node = NodeLogicExpr::new(expr_lhs.clone(), expr_rhs.unwrap(), logic_op);
                         expr_lhs.set_var(Exprs::LogicExpr(logic_node));
+                    },
+                Operator::TerneryOp(tern_op) =>
+                    {
+                        // consume the ':' token for ternery, e.g: 1 ? 2 : 3
+                        if self.try_consume(TokenType::Colon).is_none() {error_expected!(":");}
+
+                        // parse the ternery "false" branch
+                        if let Some(false_expr_branch) = self.parse_expr(next_min_prec)
+                        {
+                            let ternery_node = NodeTerneryExpr::new(
+                                expr_lhs.clone(), expr_rhs.unwrap(), false_expr_branch, tern_op
+                            );
+
+                            expr_lhs.set_var(Exprs::TerneryExpr(ternery_node));
+                        }
                     }
             }
 

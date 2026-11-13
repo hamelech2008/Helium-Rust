@@ -149,16 +149,58 @@ pub mod expr
     }
 
 
-    pub enum Operator 
+    #[derive(Clone, Debug)]
+    pub enum TerneryOp {Ternery}
+
+    #[derive(Clone, Debug)]
+    pub struct NodeTerneryExpr
+    {
+        condition: Box<NodeExpr>,
+        true_expr: Box<NodeExpr>,
+        false_expr: Box<NodeExpr>,
+        op: TerneryOp
+    }
+
+    impl NodeTerneryExpr
+    {
+        pub fn new(condition: NodeExpr, true_expr: NodeExpr, false_expr: NodeExpr, op: TerneryOp) -> Self
+        {
+            Self
+            {
+                condition: Box::new(condition),
+                true_expr: Box::new(true_expr),
+                false_expr: Box::new(false_expr),
+                op
+            }
+        }
+        
+        pub fn get_condition(&self) -> &NodeExpr
+        {
+            &self.condition
+        }
+        
+        pub fn get_true_expr(&self) -> &NodeExpr
+        {
+            &self.true_expr
+        }
+        
+        pub fn get_false_expr(&self) -> &NodeExpr
+        {
+            &self.false_expr
+        }
+    }
+
+    pub enum Operator
     {
         BinOp(BinOp),
         LogicOp(LogicOp),
+        TerneryOp(TerneryOp)
     }
 
 
     #[derive(Debug, Clone)]
 
-    pub enum Exprs { Term(term::NodeTerm), BinExpr(NodeBinExpr), LogicExpr(NodeLogicExpr) }
+    pub enum Exprs { Term(term::NodeTerm), BinExpr(NodeBinExpr), LogicExpr(NodeLogicExpr), TerneryExpr(NodeTerneryExpr) }
     #[derive(Debug, Clone)]
 
     pub struct NodeExpr
@@ -333,7 +375,7 @@ pub mod stmt
         expr: NodeExpr,
         scope: NodeScope
     }
-    
+
     impl NodeStmtWhileLoop
     {
         pub fn new(expr: NodeExpr, scope: NodeScope) -> Self
@@ -344,19 +386,19 @@ pub mod stmt
                 scope
             }
         }
-        
+
         pub fn get_expr(&self) -> &NodeExpr
         {
             &self.expr
         }
-        
+
         pub fn get_scope(&self) -> &NodeScope
         {
             &self.scope
         }
     }
-    
-    
+
+
     #[derive(Debug, Clone)]
     pub enum Stmts
     {

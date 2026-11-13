@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::process::exit;
 use crate::parser::ast_nodes::{NodeProg, NodeScope};
-use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr};
+use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr};
 use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtIf, NodeStmtWhileLoop, Stmts};
 use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, NodeTermIdent, NodeTermIntLiteral, Terms};
 mod instructions;
@@ -181,6 +181,7 @@ impl Generator
             Exprs::Term(node_term) => self.gen_term(node_term),
             Exprs::BinExpr(node_bin_expr) => self.gen_bin_expr(node_bin_expr),
             Exprs::LogicExpr(node_logic_expr) => self.gen_logic_expr(node_logic_expr),
+            Exprs::TerneryExpr(node_ternery_expr) => self.gen_ternery_expr(node_ternery_expr),
             _ => exit(0) // TODO: replace with error expected
         }
     }
@@ -210,8 +211,9 @@ impl Generator
         let stack_location = match self.vars.get(&node_ident.ident.data)
         {
             Some(val) => (self.stack_size - val - 1) * 8,
-            None => exit(0) // TODO: replace with error expected
+            None => exit(1) // TODO: replace with error expected
         };
+
 
         instructions::movq(self, &format!("{stack_location}(%rsp)"), "%rax");
         instructions::push(self, "%rax");
@@ -247,6 +249,7 @@ impl Generator
         instructions::pop(self, "%rbx");
         instructions::addq(self, "%rbx", "%rax");
 
+        instructions::push(self, "%rax");
     }
 
     fn gen_bin_expr_sub(&mut self, bin_expr_add: &NodeBinExpr)
@@ -257,6 +260,7 @@ impl Generator
         instructions::pop(self, "%rbx");
         instructions::subq(self, "%rbx", "%rax");
 
+        instructions::push(self, "%rax");
     }
 
     fn gen_bin_expr_mul(&mut self, bin_expr_mul: &NodeBinExpr)
@@ -266,6 +270,8 @@ impl Generator
         instructions::pop(self, "%rax");
         instructions::pop(self, "%rbx");
         instructions::mulq(self, "%rbx", "%rax");
+
+        instructions::push(self, "%rax");
     }
     fn gen_bin_expr_div(&mut self, bin_expr_div: &NodeBinExpr)
     {}
@@ -364,6 +370,40 @@ impl Generator
         instructions::movzx(self, "%al", "%rax");
 
         instructions::push(self, "%rax");
+    }
+
+
+    fn gen_ternery_expr(&mut self, node_ternery_expr: &NodeTerneryExpr)
+    {
+        let false_branch_start = self.gen_label();
+        let false_branch_end = self.gen_label();
+        self.gen_expr(node_ternery_expr.get_condition());
+        instructions::pop(self, "%rax");
+
+        instructions::testq(self, "%rax");
+        instructions::jz(self, &false_branch_start);
+
+        let initial_stack_size = self.stack_size; // save the init stack size
+
+        // generate the "true" branch
+        self.gen_expr(node_ternery_expr.get_true_expr()); // gen_expr already pushes onto the stack
+        let true_stack_size = self.stack_size; // save the true branch stack size
+        instructions::jmp(self, &false_branch_end);
+
+
+        // generate the "false" branch
+        instructions::insert_label(self, &false_branch_start);
+        self.stack_size = initial_stack_size; // reset the stack size for the false branch
+
+        // gen_expr already pushes onto the stack
+        self.gen_expr(node_ternery_expr.get_false_expr());
+        let false_stack_size = self.stack_size; // save the false branch stack size
+        instructions::insert_label(self, &false_branch_end);
+
+
+        assert_eq!(true_stack_size, false_stack_size); // make sure both stack sizes are the same
+
+        self.stack_size = true_stack_size;
     }
 
     // helper functions

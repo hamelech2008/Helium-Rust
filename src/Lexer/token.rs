@@ -7,6 +7,7 @@ pub enum TokenType
     Ident,
     Equals, Greater, Lesser, Addition, Multiplication, Subtraction, Division, EqualsTo,
     And, Or,
+    Ternary, Colon,
     IntLiteral, StringLiteral,
     SemiColon, LeftBracket, RightBracket, LeftCurly, RightCurly
 }

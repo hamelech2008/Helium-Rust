@@ -9,21 +9,23 @@ pub(crate) mod token;
 pub fn binary_prec(token_type: TokenType) -> Option<i32> {
     match token_type
     {
-        TokenType::Or => Some(0),
+        TokenType::Ternary => Some(0),
 
-        TokenType::And => Some(1),
+        TokenType::Or => Some(1),
+
+        TokenType::And => Some(2),
 
 
-        TokenType::EqualsTo => Some(2),
+        TokenType::EqualsTo => Some(3),
 
-        TokenType::Lesser => Some(3),
-        TokenType::Greater => Some(3),
+        TokenType::Lesser => Some(4),
+        TokenType::Greater => Some(4),
 
-        TokenType::Subtraction => Some(4),
-        TokenType::Addition => Some(4),
+        TokenType::Subtraction => Some(5),
+        TokenType::Addition => Some(5),
 
-        TokenType::Division => Some(5),
-        TokenType::Multiplication => Some(5),
+        TokenType::Division => Some(6),
+        TokenType::Multiplication => Some(6),
 
         _ => None
     }
@@ -62,8 +64,10 @@ impl Lexer
         | (?P<equals>=)
         | (?P<int>-?\d+)
         | (?P<semi>;)
+        | (?P<colon>:)
         | (?P<greater>>)
         | (?P<lesser><)
+        | (?P<ternery>\?)
         | (?P<addition>\+)
         | (?P<multiplication>\*)
         | (?P<subtraction>-)
@@ -149,6 +153,10 @@ impl Lexer
             {
                 self.add_token(TokenType::EqualsTo, m);
             }
+            else if let Some(m) = caps.name("ternery")
+            {
+                self.add_token(TokenType::Ternary, m);
+            }
             else if let Some(m) = caps.name("left_bracket")
             {
                 self.add_token(TokenType::LeftBracket, m);
@@ -164,6 +172,10 @@ impl Lexer
             else if let Some(m) = caps.name("right_curly")
             {
                 self.add_token(TokenType::RightCurly, m);
+            }
+            else if let Some(m) = caps.name("colon")
+            {
+                self.add_token(TokenType::Colon, m);
             }
         }
     }

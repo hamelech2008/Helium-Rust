@@ -43,7 +43,6 @@ pub fn addq(generator: &mut generator::Generator, src: &str, dst: &str)
     generator.output.push_str(", ");
     generator.output.push_str(dst);
     generator.output.push_str("\n");
-    push(generator, dst);
 }
 
 pub fn subq(generator: &mut generator::Generator, src: &str, dst: &str)
@@ -53,7 +52,6 @@ pub fn subq(generator: &mut generator::Generator, src: &str, dst: &str)
     generator.output.push_str(", ");
     generator.output.push_str(dst);
     generator.output.push_str("\n");
-    push(generator, dst);
 }
 
 pub fn mulq(generator: &mut generator::Generator, src: &str, dst: &str)
@@ -63,7 +61,6 @@ pub fn mulq(generator: &mut generator::Generator, src: &str, dst: &str)
     generator.output.push_str(", ");
     generator.output.push_str(dst);
     generator.output.push_str("\n");
-    push(generator, dst);
 }
 
 pub fn testq(generator: &mut generator::Generator, reg: &str)
