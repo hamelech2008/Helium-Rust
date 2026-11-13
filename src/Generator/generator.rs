@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::process::exit;
 use crate::parser::ast_nodes::{NodeProg, NodeScope};
-use crate::parser::ast_nodes::expr::{BinOp, Exprs, NodeBinExpr, NodeExpr};
-use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtIf, Stmts};
+use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr};
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtIf, NodeStmtWhileLoop, Stmts};
 use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, NodeTermIdent, NodeTermIntLiteral, Terms};
 mod instructions;
 
@@ -55,6 +55,7 @@ impl Generator
             Stmts::NodeStmtIf(node_if) => self.gen_if_stmt(node_if),
             Stmts::NodeStmtAssign(node_assign) => self.gen_assign_stmt(node_assign),
             Stmts::NodeStmtForLoop(node_for_loop) => self.gen_for_loop_stmt(node_for_loop),
+            Stmts::NodeStmtWhileLoop(node_while_loop) => self.gen_while_loop_stmt(node_while_loop),
             _ => exit(0) // TODO: replace with error expected
         }
     }
@@ -87,11 +88,15 @@ impl Generator
         instructions::insert_label(self, &after_if_label);
         match node_if.get_else_scope()
         {
-            Some(node_else) => self.gen_else_stmt(node_else),
-            None => exit(1) // TODO: replace with error expected
+            Some(node_else) =>
+                {
+                    self.gen_else_stmt(node_else);
+                    instructions::insert_label(self, &after_else_label);
+                },
+            None => ()
         }
 
-        instructions::insert_label(self, &after_else_label);
+
     }
     fn gen_else_stmt(&mut self, node_else: &NodeStmtElse)
     {
@@ -146,6 +151,28 @@ impl Generator
     }
 
 
+    fn gen_while_loop_stmt(&mut self, node_while_loop: &NodeStmtWhileLoop)
+    {
+        let loop_start = self.gen_label();
+        let loop_end = self.gen_label();
+
+        instructions::insert_label(self, &loop_start);
+
+        self.gen_expr(node_while_loop.get_expr());
+        instructions::pop(self, "%rax");
+
+        instructions::testq(self, "%rax");
+        instructions::jz(self, &loop_end);
+
+        self.gen_scope(node_while_loop.get_scope());
+
+        instructions::jmp(self, &loop_start);
+
+        instructions::insert_label(self, &loop_end);
+
+    }
+
+
     // Expressions
     fn gen_expr(&mut self, expr: &NodeExpr)
     {
@@ -153,6 +180,7 @@ impl Generator
         {
             Exprs::Term(node_term) => self.gen_term(node_term),
             Exprs::BinExpr(node_bin_expr) => self.gen_bin_expr(node_bin_expr),
+            Exprs::LogicExpr(node_logic_expr) => self.gen_logic_expr(node_logic_expr),
             _ => exit(0) // TODO: replace with error expected
         }
     }
@@ -204,6 +232,9 @@ impl Generator
             BinOp::Subtraction => self.gen_bin_expr_sub(bin_expr),
             BinOp::Multiplication => self.gen_bin_expr_mul(bin_expr),
             BinOp::Division => self.gen_bin_expr_div(bin_expr),
+            BinOp::Lesser => self.gen_bin_expr_less(bin_expr),
+            BinOp::Greater => self.gen_bin_expr_greater(bin_expr),
+            BinOp::EqualsTo => self.gen_bin_expr_equals_to(bin_expr),
             _ => exit(0) // TODO: replace with error expected
         }
     }
@@ -236,9 +267,104 @@ impl Generator
         instructions::pop(self, "%rbx");
         instructions::mulq(self, "%rbx", "%rax");
     }
-    fn gen_bin_expr_div(&mut self, bin_expr_div: &NodeBinExpr) {}
+    fn gen_bin_expr_div(&mut self, bin_expr_div: &NodeBinExpr)
+    {}
 
+    fn gen_bin_expr_less(&mut self, bin_expr_less: &NodeBinExpr)
+    {
+        self.gen_expr(bin_expr_less.get_lhs());
+        self.gen_expr(bin_expr_less.get_rhs());
+        instructions::pop(self, "%rax");
+        instructions::pop(self, "%rbx");
 
+        instructions::movq_immediate(self, "0", "%rcx");
+        instructions::movq_immediate(self, "1", "%rdi");
+
+        instructions::cmpq(self, "%rax", "%rbx");
+        instructions::cmovl(self, "%rdi", "%rcx");
+
+        instructions::push(self, "%rcx");
+    }
+    fn gen_bin_expr_greater(&mut self, bin_expr_greater: &NodeBinExpr)
+    {
+        self.gen_expr(bin_expr_greater.get_lhs());
+        self.gen_expr(bin_expr_greater.get_rhs());
+        instructions::pop(self, "%rax");
+        instructions::pop(self, "%rbx");
+
+        instructions::movq_immediate(self, "0", "%rcx");
+        instructions::movq_immediate(self, "1", "%rdi");
+
+        instructions::cmpq(self, "%rax", "%rbx");
+        instructions::cmovg(self, "%rdi", "%rcx");
+
+        instructions::push(self, "%rcx");
+    }
+
+    fn gen_bin_expr_equals_to(&mut self, bin_expr_equals: &NodeBinExpr)
+    {
+        self.gen_expr(bin_expr_equals.get_lhs());
+        self.gen_expr(bin_expr_equals.get_rhs());
+        instructions::pop(self, "%rax");
+        instructions::pop(self, "%rbx");
+
+        instructions::movq_immediate(self, "0", "%rcx");
+        instructions::movq_immediate(self, "1", "%rdi");
+
+        instructions::cmpq(self, "%rax", "%rbx");
+        instructions::cmove(self, "%rdi", "%rcx");
+
+        instructions::push(self, "%rcx");
+    }
+
+    // logic expressions
+    fn gen_logic_expr(&mut self, node_logic_expr: &NodeLogicExpr)
+    {
+        match node_logic_expr.get_op()
+        {
+            LogicOp::Or => self.gen_logic_expr_or(node_logic_expr),
+            LogicOp::And => self.gen_logic_expr_and(node_logic_expr),
+            _ => exit(0) // TODO: replace with error expected
+        }
+    }
+
+    fn gen_logic_expr_or(&mut self, node_or: &NodeLogicExpr)
+    {
+        self.gen_expr(node_or.get_rhs());
+        self.gen_expr(node_or.get_lhs());
+        instructions::pop(self, "%rax");
+        instructions::pop(self, "%rbx");
+
+        instructions::testq(self, "%rax");
+        instructions::setnz(self, "%al");
+
+        instructions::testq(self, "%rbx");
+        instructions::setnz(self, "%bl");
+
+        instructions::or(self, "%bl", "%al");
+        instructions::movzx(self, "%al", "%rax");
+
+        instructions::push(self, "%rax");
+    }
+
+    fn gen_logic_expr_and(&mut self, node_and: &NodeLogicExpr)
+    {
+        self.gen_expr(node_and.get_rhs());
+        self.gen_expr(node_and.get_lhs());
+        instructions::pop(self, "%rax");
+        instructions::pop(self, "%rbx");
+
+        instructions::testq(self, "%rax");
+        instructions::setnz(self, "%al");
+
+        instructions::testq(self, "%rbx");
+        instructions::setnz(self, "%bl");
+
+        instructions::and(self, "%bl", "%al");
+        instructions::movzx(self, "%al", "%rax");
+
+        instructions::push(self, "%rax");
+    }
 
     // helper functions
     fn gen_label(&mut self) -> String

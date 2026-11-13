@@ -75,7 +75,7 @@ pub mod expr
 
 
     #[derive(Clone, Debug)]
-    pub enum BinOp { Addition, Subtraction, Division, Multiplication }
+    pub enum BinOp { Addition, Subtraction, Division, Multiplication, Lesser, Greater, EqualsTo }
     #[derive(Clone, Debug)]
     pub struct NodeBinExpr
     {
@@ -112,9 +112,53 @@ pub mod expr
     }
 
 
+    #[derive(Clone, Debug)]
+    pub enum LogicOp { And, Or}
+    #[derive(Clone, Debug)]
+    pub struct NodeLogicExpr
+    {
+        lhs: Box<NodeExpr>,
+        rhs: Box<NodeExpr>,
+        op: LogicOp
+    }
+    impl NodeLogicExpr
+    {
+        pub fn new(lhs: NodeExpr, rhs: NodeExpr, op: LogicOp) -> Self
+        {
+            Self
+            {
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+                op
+            }
+        }
+        pub fn get_lhs(&self) -> &NodeExpr
+        {
+            &self.lhs
+        }
+
+        pub fn get_rhs(&self) -> &NodeExpr
+        {
+            &self.rhs
+        }
+
+        pub fn get_op(&self) -> &LogicOp
+        {
+            &self.op
+        }
+    }
+
+
+    pub enum Operator 
+    {
+        BinOp(BinOp),
+        LogicOp(LogicOp),
+    }
+
+
     #[derive(Debug, Clone)]
 
-    pub enum Exprs { Term(term::NodeTerm), BinExpr(NodeBinExpr) }
+    pub enum Exprs { Term(term::NodeTerm), BinExpr(NodeBinExpr), LogicExpr(NodeLogicExpr) }
     #[derive(Debug, Clone)]
 
     pub struct NodeExpr
@@ -262,7 +306,7 @@ pub mod stmt
                 scope
             }
         }
-        
+
         pub fn get_init_stmt(&self) -> &NodeStmt
         {
             &self.init_stmt
@@ -284,11 +328,41 @@ pub mod stmt
 
 
     #[derive(Debug, Clone)]
+    pub struct NodeStmtWhileLoop
+    {
+        expr: NodeExpr,
+        scope: NodeScope
+    }
+    
+    impl NodeStmtWhileLoop
+    {
+        pub fn new(expr: NodeExpr, scope: NodeScope) -> Self
+        {
+            Self
+            {
+                expr,
+                scope
+            }
+        }
+        
+        pub fn get_expr(&self) -> &NodeExpr
+        {
+            &self.expr
+        }
+        
+        pub fn get_scope(&self) -> &NodeScope
+        {
+            &self.scope
+        }
+    }
+    
+    
+    #[derive(Debug, Clone)]
     pub enum Stmts
     {
         NodeStmtDec(NodeStmtDec), NodeStmtIf(NodeStmtIf),
         NodeStmtElse(NodeStmtElse), NodeStmtAssign(NodeStmtAssign),
-        NodeStmtForLoop(NodeStmtForLoop)
+        NodeStmtForLoop(NodeStmtForLoop), NodeStmtWhileLoop(NodeStmtWhileLoop)
     }
     #[derive(Debug, Clone)]
     pub struct NodeStmt

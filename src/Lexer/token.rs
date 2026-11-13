@@ -5,7 +5,7 @@ pub enum TokenType
     Exit, For, While, If, Else,
     Dec,
     Ident,
-    Equals, Greater, Lesser, Addition, Multiplication, Subtraction, Division,
+    Equals, Greater, Lesser, Addition, Multiplication, Subtraction, Division, EqualsTo,
     And, Or,
     IntLiteral, StringLiteral,
     SemiColon, LeftBracket, RightBracket, LeftCurly, RightCurly

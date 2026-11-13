@@ -89,6 +89,102 @@ pub fn jmp(generator: &mut generator::Generator, label: &str)
     generator.output.push_str("\n");
 }
 
+pub fn setnz(generator: &mut generator::Generator, reg: &str)
+{
+    generator.output.push_str("\tsetnz ");
+    generator.output.push_str(reg);
+    generator.output.push_str("\n");
+}
+
+pub fn or(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tor ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
+pub fn and(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tand ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
+pub fn movzx(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tmovzx ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
+pub fn cmpq(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tcmpq ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
+pub fn cmovg(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tcmovg ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
+pub fn cmovge(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tcmovge ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
+pub fn cmovl(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tcmovl ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+pub fn cmovle(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tcmovle ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
+pub fn cmove(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tcmove ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
+pub fn cmovne(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tcmovne ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
 pub fn insert_label(generator: &mut generator::Generator, label: &str)
 {
     generator.output.push_str(label);

@@ -4,9 +4,9 @@ use std::process::exit;
 use crate::lexer::{binary_prec};
 use crate::parser::ast_nodes::{stmt, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::ast_nodes::expr::{BinOp, Exprs, NodeBinExpr, NodeExpr};
+use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, Operator};
 use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtElse, NodeStmtIf};
-use crate::parser::ast_nodes::stmt::Stmts::NodeStmtForLoop;
+use crate::parser::ast_nodes::stmt::Stmts::{NodeStmtForLoop, NodeStmtWhileLoop};
 use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, Terms};
 macro_rules! check_next_tokens {
     ($self:expr, $($token:expr),+ $(,)?) => {
@@ -56,7 +56,7 @@ impl Parser
     }
 
 
-
+    // statement parsing
     fn parse_stmt(&mut self, expect_semi_colon: bool) -> Option<NodeStmt>
     {
         // check for a declaration statement
@@ -118,9 +118,11 @@ impl Parser
 
                 let mut node_if = NodeStmtIf::new(expr, self.parse_scope());
 
-                node_if.set_else(self.parse_else_stmt());
-
-                let stmt = NodeStmt::new(ast_nodes::stmt::Stmts::NodeStmtIf(node_if));
+                if self.try_peek(TokenType::Else)
+                {
+                    node_if.set_else(self.parse_else_stmt());
+                }
+                let stmt = NodeStmt::new(stmt::Stmts::NodeStmtIf(node_if));
                 return Some(stmt);
             }
         }
@@ -155,6 +157,7 @@ impl Parser
         // check for a for loop statement
         if check_next_tokens!(self, TokenType::For, TokenType::LeftBracket)
         {
+
             // consume the 'for' token
             if self.try_consume(TokenType::For).is_none() {error_expected!("for");}
             // consume the '(' token
@@ -170,6 +173,7 @@ impl Parser
 
                 if let Some(end_stmt) = self.parse_stmt(false)
                 {
+
                     // consume the ')' token
                     if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
 
@@ -179,6 +183,28 @@ impl Parser
                     let stmt = NodeStmt::new(NodeStmtForLoop(node_for));
                     return Some(stmt);
                 }
+            }
+        }
+
+        // check for a while loop statement
+        if check_next_tokens!(self, TokenType::While, TokenType::LeftBracket)
+        {
+            // consume the 'for' token
+            if self.try_consume(TokenType::While).is_none() {error_expected!("while");}
+            // consume the '(' token
+            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!("(");}
+
+            if let Some(expr) = self.parse_expr(0)
+            {
+                // consume the ')' token
+                if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+
+                let scope = self.parse_scope();
+
+                let node_while = stmt::NodeStmtWhileLoop::new(expr, scope);
+
+                let stmt = NodeStmt::new(NodeStmtWhileLoop(node_while));
+                return Some(stmt);
             }
         }
         None
@@ -227,33 +253,57 @@ impl Parser
             if expr_rhs.is_none() || op.is_none() {exit(1);} // TODO: replace with error expected
 
             // get the binary operation
-            let bin_op = match op.unwrap().token_type
+            let bin_op: Operator = match op.unwrap().token_type
             {
-                TokenType::Addition => BinOp::Addition,
-                TokenType::Subtraction => BinOp::Subtraction,
-                TokenType::Multiplication => BinOp::Multiplication,
-                _ => exit(1) // TODO: replace with error expected
+                TokenType::Addition => Operator::BinOp(BinOp::Addition),
+                TokenType::Subtraction => Operator::BinOp(BinOp::Subtraction),
+                TokenType::Multiplication => Operator::BinOp(BinOp::Multiplication),
+                TokenType::Division => Operator::BinOp(BinOp::Division),
+                TokenType::Lesser => Operator::BinOp(BinOp::Lesser),
+                TokenType::Greater => Operator::BinOp(BinOp::Greater),
+                TokenType::EqualsTo => Operator::BinOp(BinOp::EqualsTo),
+                TokenType::And => Operator::LogicOp(LogicOp::And),
+                TokenType::Or => Operator::LogicOp(LogicOp::Or),
+
+                _ => exit(1), // TODO: Replace with proper error handling
             };
 
-            let bin_node = NodeBinExpr::new(expr_lhs.clone(), expr_rhs.unwrap(), bin_op);
-            expr_lhs.set_var(Exprs::BinExpr(bin_node));
+            match bin_op
+            {
+                Operator::BinOp(bin_op) =>
+                    {
+                        let bin_node = NodeBinExpr::new(expr_lhs.clone(), expr_rhs.unwrap(), bin_op);
+                        expr_lhs.set_var(Exprs::BinExpr(bin_node));
+                    },
+                Operator::LogicOp(logic_op) =>
+                    {
+                        let logic_node = NodeLogicExpr::new(expr_lhs.clone(), expr_rhs.unwrap(), logic_op);
+                        expr_lhs.set_var(Exprs::LogicExpr(logic_node));
+                    }
+            }
+
         }
         Some(expr_lhs)
     }
 
 
+
+    // term parsing
     fn parse_term(&mut self) -> Option<NodeTerm>
     {
+        // check for an in literal term for e.g: 1, 3, 10...
         if let Some(int_literal) = self.try_consume(TokenType::IntLiteral)
         {
             return self.parse_int_literal_term(&int_literal);
         }
 
+        // check for an identifier term - variables
         if let Some(ident) = self.try_consume(TokenType::Ident)
         {
             return self.parse_ident_term(ident);
         }
 
+        // check for a brackets term for e.g: (1 + 5 * 3)
         if  let Some(_open_bracket) = self.try_consume(TokenType::LeftBracket) &&
             let Some(expr) = self.parse_expr(0)
         {
@@ -353,7 +403,7 @@ impl Parser
             Some(t) => t,
             None =>
                 {
-                    exit(1);
+                    return false;
                 }
         };
 

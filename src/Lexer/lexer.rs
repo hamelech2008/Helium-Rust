@@ -9,17 +9,21 @@ pub(crate) mod token;
 pub fn binary_prec(token_type: TokenType) -> Option<i32> {
     match token_type
     {
-        TokenType::And => Some(0),
         TokenType::Or => Some(0),
 
-        TokenType::Lesser => Some(1),
-        TokenType::Greater => Some(1),
+        TokenType::And => Some(1),
 
-        TokenType::Subtraction => Some(2),
-        TokenType::Addition => Some(2),
 
-        TokenType::Division => Some(3),
-        TokenType::Multiplication => Some(3),
+        TokenType::EqualsTo => Some(2),
+
+        TokenType::Lesser => Some(3),
+        TokenType::Greater => Some(3),
+
+        TokenType::Subtraction => Some(4),
+        TokenType::Addition => Some(4),
+
+        TokenType::Division => Some(5),
+        TokenType::Multiplication => Some(5),
 
         _ => None
     }
@@ -54,8 +58,9 @@ impl Lexer
         | (?P<ident>[a-zA-Z_][a-zA-Z0-9_]*)
         | (?P<and>&&)
         | (?P<or>\|\|)
+        | (?P<equals_to>==)
         | (?P<equals>=)
-        | (?P<int>\d+)
+        | (?P<int>-?\d+)
         | (?P<semi>;)
         | (?P<greater>>)
         | (?P<lesser><)
@@ -79,6 +84,10 @@ impl Lexer
             else if let Some(m) = caps.name("for")
             {
                 self.add_token(TokenType::For, m);
+            }
+            else if let Some(m) = caps.name("while")
+            {
+                self.add_token(TokenType::While, m);
             }
             else if let Some(m) = caps.name("ident")
             {
@@ -119,6 +128,26 @@ impl Lexer
             else if let Some(m) = caps.name("division")
             {
                 self.add_token(TokenType::Division, m);
+            }
+            else if let Some(m) = caps.name("or")
+            {
+                self.add_token(TokenType::Or, m);
+            }
+            else if let Some(m) = caps.name("and")
+            {
+                self.add_token(TokenType::And, m);
+            }
+            else if let Some(m) = caps.name("lesser")
+            {
+                self.add_token(TokenType::Lesser, m);
+            }
+            else if let Some(m) = caps.name("greater")
+            {
+                self.add_token(TokenType::Greater, m);
+            }
+            else if let Some(m) = caps.name("equals_to")
+            {
+                self.add_token(TokenType::EqualsTo, m);
             }
             else if let Some(m) = caps.name("left_bracket")
             {
