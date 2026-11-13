@@ -4,7 +4,7 @@ use std::process::exit;
 use crate::lexer::{binary_prec};
 use crate::parser::ast_nodes::{stmt, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr, Operator, TerneryOp};
+use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr, Operator};
 use crate::parser::ast_nodes::functions::{FuncDecVar, NodeFuncDecl};
 use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtElse, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, Stmts};
 use crate::parser::ast_nodes::stmt::Stmts::{NodeStmtForLoop, NodeStmtWhileLoop};
@@ -59,7 +59,6 @@ impl Parser
 
 
     // function parsing
-
     fn parse_function_param(&mut self) -> Option<FuncDecVar>
     {
         // consume the 'dec' token
@@ -143,7 +142,6 @@ impl Parser
         {
             // consume 'dec' token
             if self.try_consume(TokenType::Dec).is_none() {error_expected!("dec");}
-
             // consume ident value
             let ident = match self.try_consume(TokenType::Ident)
             {
@@ -154,11 +152,14 @@ impl Parser
                     }
             };
 
+
             // consume '=' token
             if self.try_consume(TokenType::Equals).is_none() {error_expected!("=");}
+
             // consume rhs expression (for e.g: dec var = 20 + 20; - 20 + 20 is the expression)
             if let Some(expr) = self.parse_expr(0)
             {
+
                 // consume ';' token
                 if expect_semi_colon
                 {
@@ -345,6 +346,8 @@ impl Parser
     }
 
 
+
+    // expression parsing
     fn parse_expr(&mut self, min_prec: i32) -> Option<NodeExpr>
     {
         let term_lhs = self.parse_term();
@@ -386,12 +389,15 @@ impl Parser
                 TokenType::Subtraction => Operator::BinOp(BinOp::Subtraction),
                 TokenType::Multiplication => Operator::BinOp(BinOp::Multiplication),
                 TokenType::Division => Operator::BinOp(BinOp::Division),
+                TokenType::LesserOrEqual => Operator::BinOp(BinOp::LesserOrEqual),
+                TokenType::GreaterOrEqual => Operator::BinOp(BinOp::GreaterOrEqual),
                 TokenType::Lesser => Operator::BinOp(BinOp::Lesser),
                 TokenType::Greater => Operator::BinOp(BinOp::Greater),
                 TokenType::EqualsTo => Operator::BinOp(BinOp::EqualsTo),
+                TokenType::NotEqual => Operator::BinOp(BinOp::NotEqual),
                 TokenType::And => Operator::LogicOp(LogicOp::And),
                 TokenType::Or => Operator::LogicOp(LogicOp::Or),
-                TokenType::Ternary => Operator::TerneryOp(TerneryOp::Ternery),
+                TokenType::Ternary => Operator::TerneryOp,
 
                 _ => exit(1), // TODO: Replace with proper error handling
             };
@@ -408,7 +414,7 @@ impl Parser
                         let logic_node = NodeLogicExpr::new(expr_lhs.clone(), expr_rhs.unwrap(), logic_op);
                         expr_lhs.set_var(Exprs::LogicExpr(logic_node));
                     },
-                Operator::TerneryOp(tern_op) =>
+                Operator::TerneryOp =>
                     {
                         // consume the ':' token for ternery, e.g: 1 ? 2 : 3
                         if self.try_consume(TokenType::Colon).is_none() {error_expected!(":");}
@@ -417,7 +423,7 @@ impl Parser
                         if let Some(false_expr_branch) = self.parse_expr(next_min_prec)
                         {
                             let ternery_node = NodeTerneryExpr::new(
-                                expr_lhs.clone(), expr_rhs.unwrap(), false_expr_branch, tern_op
+                                expr_lhs.clone(), expr_rhs.unwrap(), false_expr_branch
                             );
 
                             expr_lhs.set_var(Exprs::TerneryExpr(ternery_node));

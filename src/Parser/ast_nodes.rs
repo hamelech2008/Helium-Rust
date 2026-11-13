@@ -105,7 +105,7 @@ pub mod expr
 
 
     #[derive(Clone, Debug)]
-    pub enum BinOp { Addition, Subtraction, Division, Multiplication, Lesser, Greater, EqualsTo }
+    pub enum BinOp { Addition, Subtraction, Division, Multiplication, Lesser, Greater, EqualsTo, GreaterOrEqual, LesserOrEqual, NotEqual }
     #[derive(Clone, Debug)]
     pub struct NodeBinExpr
     {
@@ -179,8 +179,6 @@ pub mod expr
     }
 
 
-    #[derive(Clone, Debug)]
-    pub enum TerneryOp {Ternery}
 
     #[derive(Clone, Debug)]
     pub struct NodeTerneryExpr
@@ -188,19 +186,17 @@ pub mod expr
         condition: Box<NodeExpr>,
         true_expr: Box<NodeExpr>,
         false_expr: Box<NodeExpr>,
-        op: TerneryOp
     }
 
     impl NodeTerneryExpr
     {
-        pub fn new(condition: NodeExpr, true_expr: NodeExpr, false_expr: NodeExpr, op: TerneryOp) -> Self
+        pub fn new(condition: NodeExpr, true_expr: NodeExpr, false_expr: NodeExpr) -> Self
         {
             Self
             {
                 condition: Box::new(condition),
                 true_expr: Box::new(true_expr),
-                false_expr: Box::new(false_expr),
-                op
+                false_expr: Box::new(false_expr)
             }
         }
 
@@ -224,7 +220,7 @@ pub mod expr
     {
         BinOp(BinOp),
         LogicOp(LogicOp),
-        TerneryOp(TerneryOp)
+        TerneryOp
     }
 
 
@@ -482,7 +478,7 @@ pub mod stmt
     pub enum Stmts
     {
         NodeStmtDec(NodeStmtDec), NodeStmtIf(NodeStmtIf),
-        NodeStmtElse(NodeStmtElse), NodeStmtAssign(NodeStmtAssign),
+        NodeStmtAssign(NodeStmtAssign),
         NodeStmtForLoop(NodeStmtForLoop), NodeStmtWhileLoop(NodeStmtWhileLoop),
         NodeStmtReturn(NodeStmtReturn), NodeStmtFuncCall(NodeStmtFuncCall)
     }
@@ -583,10 +579,6 @@ pub mod functions
         pub fn get_ident(&self) -> &Token
         {
             &self.ident
-        }
-        pub fn add_declared_var(&mut self, var: FuncDecVar)
-        {
-            self.declared_vars.push(var);
         }
 
         pub fn get_declared_vars(&self) -> &Vec<FuncDecVar>

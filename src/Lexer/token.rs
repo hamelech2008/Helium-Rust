@@ -2,10 +2,11 @@
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TokenType
 {
-    Exit, For, While, If, Else, Function, Return,
+    For, While, If, Else, Function, Return,
     Dec,
     Ident,
-    Equals, Greater, Lesser, Addition, Multiplication, Subtraction, Division, EqualsTo,
+    Equals, Greater, Lesser, Addition, Multiplication, Subtraction,
+    Division, EqualsTo, GreaterOrEqual, LesserOrEqual, NotEqual,
     And, Or,
     Ternary, Colon,
     IntLiteral, StringLiteral,

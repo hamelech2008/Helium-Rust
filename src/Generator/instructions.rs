@@ -63,6 +63,13 @@ pub fn mulq(generator: &mut generator::Generator, src: &str, dst: &str)
     generator.output.push_str("\n");
 }
 
+pub fn divq(generator: &mut generator::Generator, reg: &str)
+{
+    generator.output.push_str("\tdivq ");
+    generator.output.push_str(reg);
+    generator.output.push_str("\n");
+}
+
 pub fn testq(generator: &mut generator::Generator, reg: &str)
 {
     generator.output.push_str("\ttestq ");

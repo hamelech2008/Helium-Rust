@@ -117,8 +117,7 @@ impl Generator
             Stmts::NodeStmtForLoop(node_for_loop) => self.gen_for_loop_stmt(node_for_loop),
             Stmts::NodeStmtWhileLoop(node_while_loop) => self.gen_while_loop_stmt(node_while_loop),
             Stmts::NodeStmtReturn(node_return) => self.gen_return_stmt(node_return),
-            Stmts::NodeStmtFuncCall(node_call) => self.gen_func_call_stmt(node_call),
-            _ => exit(0) // TODO: replace with error expected
+            Stmts::NodeStmtFuncCall(node_call) => self.gen_func_call_stmt(node_call)
         }
     }
 
@@ -272,8 +271,7 @@ impl Generator
             Exprs::Term(node_term) => self.gen_term(node_term),
             Exprs::BinExpr(node_bin_expr) => self.gen_bin_expr(node_bin_expr),
             Exprs::LogicExpr(node_logic_expr) => self.gen_logic_expr(node_logic_expr),
-            Exprs::TerneryExpr(node_ternery_expr) => self.gen_ternery_expr(node_ternery_expr),
-            _ => exit(0) // TODO: replace with error expected
+            Exprs::TerneryExpr(node_ternery_expr) => self.gen_ternery_expr(node_ternery_expr)
         }
     }
 
@@ -286,8 +284,7 @@ impl Generator
             Terms::IntLiteral(node_int_literal) => self.gen_int_literal_term(node_int_literal),
             Terms::Ident(node_ident) => self.gen_ident_term(node_ident),
             Terms::Bracket(node_bracket) => self.gen_bracket_term(node_bracket),
-            Terms::NodeTermFuncCall(node_call) => self.gen_call_term(node_call),
-            _ => exit(0) // TODO: replace with error expected
+            Terms::NodeTermFuncCall(node_call) => self.gen_call_term(node_call)
         }
     }
 
@@ -346,7 +343,9 @@ impl Generator
             BinOp::Lesser => self.gen_bin_expr_less(bin_expr),
             BinOp::Greater => self.gen_bin_expr_greater(bin_expr),
             BinOp::EqualsTo => self.gen_bin_expr_equals_to(bin_expr),
-            _ => exit(0) // TODO: replace with error expected
+            BinOp::GreaterOrEqual => self.gen_bin_expr_greater_equal(bin_expr),
+            BinOp::LesserOrEqual => self.gen_bin_expr_less_equal(bin_expr),
+            BinOp::NotEqual => self.gen_bin_expr_not_equal(bin_expr)
         }
     }
 
@@ -383,7 +382,17 @@ impl Generator
         instructions::push(self, "%rax");
     }
     fn gen_bin_expr_div(&mut self, bin_expr_div: &NodeBinExpr)
-    {}
+    {
+        self.gen_expr(bin_expr_div.get_rhs());
+        self.gen_expr(bin_expr_div.get_lhs());
+        instructions::pop(self, "%rax");
+        instructions::pop(self, "%rbx");
+
+        instructions::divq(self, "%rbx");
+
+        instructions::push(self, "%rax");
+
+    }
 
     fn gen_bin_expr_less(&mut self, bin_expr_less: &NodeBinExpr)
     {
@@ -432,14 +441,61 @@ impl Generator
         instructions::push(self, "%rcx");
     }
 
+    fn gen_bin_expr_greater_equal(&mut self, expr_greater_equal: &NodeBinExpr)
+    {
+        self.gen_expr(expr_greater_equal.get_lhs());
+        self.gen_expr(expr_greater_equal.get_rhs());
+        instructions::pop(self, "%rax");
+        instructions::pop(self, "%rbx");
+
+        instructions::movq_immediate(self, "0", "%rcx");
+        instructions::movq_immediate(self, "1", "%rdi");
+
+        instructions::cmpq(self, "%rax", "%rbx");
+        instructions::cmovge(self, "%rdi", "%rcx");
+
+        instructions::push(self, "%rcx");
+    }
+
+    fn gen_bin_expr_less_equal(&mut self, expr_less_equal: &NodeBinExpr)
+    {
+        self.gen_expr(expr_less_equal.get_lhs());
+        self.gen_expr(expr_less_equal.get_rhs());
+        instructions::pop(self, "%rax");
+        instructions::pop(self, "%rbx");
+
+        instructions::movq_immediate(self, "0", "%rcx");
+        instructions::movq_immediate(self, "1", "%rdi");
+
+        instructions::cmpq(self, "%rax", "%rbx");
+        instructions::cmovle(self, "%rdi", "%rcx");
+
+        instructions::push(self, "%rcx");
+    }
+
+    fn gen_bin_expr_not_equal(&mut self, expr_not_equal: &NodeBinExpr)
+    {
+        self.gen_expr(expr_not_equal.get_lhs());
+        self.gen_expr(expr_not_equal.get_rhs());
+        instructions::pop(self, "%rax");
+        instructions::pop(self, "%rbx");
+
+        instructions::movq_immediate(self, "0", "%rcx");
+        instructions::movq_immediate(self, "1", "%rdi");
+
+        instructions::cmpq(self, "%rax", "%rbx");
+        instructions::cmovne(self, "%rdi", "%rcx");
+
+        instructions::push(self, "%rcx");
+    }
+
     // logic expressions
     fn gen_logic_expr(&mut self, node_logic_expr: &NodeLogicExpr)
     {
         match node_logic_expr.get_op()
         {
             LogicOp::Or => self.gen_logic_expr_or(node_logic_expr),
-            LogicOp::And => self.gen_logic_expr_and(node_logic_expr),
-            _ => exit(0) // TODO: replace with error expected
+            LogicOp::And => self.gen_logic_expr_and(node_logic_expr)
         }
     }
 

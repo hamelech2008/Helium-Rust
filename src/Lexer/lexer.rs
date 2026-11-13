@@ -17,8 +17,11 @@ pub fn binary_prec(token_type: TokenType) -> Option<i32> {
 
 
         TokenType::EqualsTo => Some(3),
+        TokenType::NotEqual => Some(3),
 
+        TokenType::LesserOrEqual => Some(4),
         TokenType::Lesser => Some(4),
+        TokenType::GreaterOrEqual => Some(4),
         TokenType::Greater => Some(4),
 
         TokenType::Subtraction => Some(5),
@@ -62,12 +65,15 @@ impl Lexer
         | (?P<ident>[a-zA-Z_][a-zA-Z0-9_]*)
         | (?P<and>&&)
         | (?P<or>\|\|)
+        | (?P<not_equal>!=)
         | (?P<equals_to>==)
         | (?P<equals>=)
         | (?P<int>-?\d+)
         | (?P<semi>;)
         | (?P<comma>,)
         | (?P<colon>:)
+        | (?P<greater_or_equals>>=)
+        | (?P<lesser_or_equals><=)
         | (?P<greater>>)
         | (?P<lesser><)
         | (?P<ternery>\?)
@@ -151,6 +157,18 @@ impl Lexer
             else if let Some(m) = caps.name("and")
             {
                 self.add_token(TokenType::And, m);
+            }
+            else if let Some(m) = caps.name("not_equal")
+            {
+                self.add_token(TokenType::NotEqual, m);
+            }
+            else if let Some(m) = caps.name("greater_or_equals")
+            {
+                self.add_token(TokenType::GreaterOrEqual, m);
+            }
+            else if let Some(m) = caps.name("lesser_or_equals")
+            {
+                self.add_token(TokenType::LesserOrEqual, m);
             }
             else if let Some(m) = caps.name("lesser")
             {
