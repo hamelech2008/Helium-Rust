@@ -187,6 +187,13 @@ pub fn retq(generator: &mut generator::Generator)
     generator.output.push_str("\tretq\n");
 }
 
+pub fn call(generation: &mut generator::Generator, func_name: &str)
+{
+    generation.output.push_str("\tcall ");
+    generation.output.push_str(func_name);
+    generation.output.push_str("\n");
+}
+
 pub fn insert_label(generator: &mut generator::Generator, label: &str)
 {
     generator.output.push_str(label);

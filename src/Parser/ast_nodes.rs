@@ -5,6 +5,7 @@ use crate::lexer::token::Token;
 pub mod term
 {
     use crate::lexer::token;
+    use crate::lexer::token::Token;
     use crate::parser::ast_nodes::expr::NodeExpr;
 
     #[derive(Debug, Clone)]
@@ -46,7 +47,36 @@ pub mod term
 
 
     #[derive(Debug, Clone)]
-    pub enum Terms { Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral), Bracket(NodeTermBracket) }
+    pub struct NodeTermFuncCall
+    {
+        ident: Token,
+        exprs: Vec<NodeExpr>
+    }
+    
+    impl NodeTermFuncCall
+    {
+        pub fn new(ident: Token, exprs: Vec<NodeExpr>) -> Self
+        {
+            Self
+            {
+                ident,
+                exprs
+            }
+        }
+
+        pub fn get_ident(&self) -> &Token
+        {
+            &self.ident
+        }
+
+        pub fn get_args(&self) -> &Vec<NodeExpr>
+        {
+            &self.exprs
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum Terms { Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral), Bracket(NodeTermBracket), NodeTermFuncCall(NodeTermFuncCall) }
 
     #[derive(Debug, Clone)]
 
@@ -398,7 +428,7 @@ pub mod stmt
         }
     }
 
-    
+
     #[derive(Debug, Clone)]
     pub struct NodeStmtReturn
     {
@@ -420,12 +450,41 @@ pub mod stmt
     }
 
     #[derive(Debug, Clone)]
+    pub struct NodeStmtFuncCall
+    {
+        ident: Token,
+        exprs: Vec<NodeExpr>
+    }
+
+    impl NodeStmtFuncCall
+    {
+        pub fn new(ident: Token, exprs: Vec<NodeExpr>) -> Self
+        {
+            Self
+            {
+                ident,
+                exprs
+            }
+        }
+        
+        pub fn get_ident(&self) -> &Token
+        {
+            &self.ident
+        }
+        
+        pub fn get_args(&self) -> &Vec<NodeExpr>
+        {
+            &self.exprs
+        }
+    }
+
+    #[derive(Debug, Clone)]
     pub enum Stmts
     {
         NodeStmtDec(NodeStmtDec), NodeStmtIf(NodeStmtIf),
         NodeStmtElse(NodeStmtElse), NodeStmtAssign(NodeStmtAssign),
         NodeStmtForLoop(NodeStmtForLoop), NodeStmtWhileLoop(NodeStmtWhileLoop),
-        NodeStmtReturn(NodeStmtReturn)
+        NodeStmtReturn(NodeStmtReturn), NodeStmtFuncCall(NodeStmtFuncCall)
     }
     #[derive(Debug, Clone)]
     pub struct NodeStmt
@@ -534,7 +593,7 @@ pub mod functions
         {
             &self.declared_vars
         }
-        
+
         pub fn get_scope(&self) -> &NodeScope
         {
             &self.scope

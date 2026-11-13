@@ -1,4 +1,10 @@
+function add_one(dec x)
+{
+    return x + 1;
+}
+
 function main()
 {
-    return 0;
+    dec a = add_one(100);
+    return a;
 }

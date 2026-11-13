@@ -6,9 +6,9 @@ use crate::parser::ast_nodes::{stmt, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr, Operator, TerneryOp};
 use crate::parser::ast_nodes::functions::{FuncDecVar, NodeFuncDecl};
-use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtElse, NodeStmtIf, NodeStmtReturn, Stmts};
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtElse, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, Stmts};
 use crate::parser::ast_nodes::stmt::Stmts::{NodeStmtForLoop, NodeStmtWhileLoop};
-use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, Terms};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, NodeTermFuncCall, Terms};
 macro_rules! check_next_tokens {
     ($self:expr, $($token:expr),+ $(,)?) => {
         [$($token),+]
@@ -112,6 +112,27 @@ impl Parser
         None
     }
 
+    fn get_func_args(&mut self) -> Vec<NodeExpr>
+    {
+        let mut func_args = Vec::new();
+
+        // consume all the arguments passed to the function
+        while !self.try_peek(TokenType::RightBracket)
+        {
+            if let Some(expr_arg) = self.parse_expr(0)
+            {
+                func_args.push(expr_arg);
+            }
+
+            if self.try_peek(TokenType::Comma)
+            {
+                // consume the ',' token
+                if self.try_consume(TokenType::Comma).is_none() {error_expected!(",");}
+            }
+
+        }
+        func_args
+    }
 
     // statement parsing
     fn parse_stmt(&mut self, expect_semi_colon: bool) -> Option<NodeStmt>
@@ -292,6 +313,27 @@ impl Parser
 
         }
 
+        // check for a function call statement
+        if check_next_tokens!(self, TokenType::Ident, TokenType::LeftBracket)
+        {
+            if let Some(ident) = self.try_consume(TokenType::Ident)
+            {
+                // consume the '(' token
+                if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!("(");}
+
+                let func_args = self.get_func_args();
+
+                // consume the ')' token
+                if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+                // consume the ';' token
+                if self.try_consume(TokenType::SemiColon).is_none() {error_expected!(";");}
+
+                let node_call = NodeStmtFuncCall::new(ident, func_args);
+                let stmt = NodeStmt::new(Stmts::NodeStmtFuncCall(node_call));
+
+                return Some(stmt);
+            }
+        }
         None
     }
 
@@ -392,6 +434,26 @@ impl Parser
     // term parsing
     fn parse_term(&mut self) -> Option<NodeTerm>
     {
+        if check_next_tokens!(self, TokenType::Ident, TokenType::LeftBracket)
+        {
+
+            if let Some(ident) = self.try_consume(TokenType::Ident)
+            {
+                // consume the '(' token
+                if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!("(");}
+
+                let func_args = self.get_func_args();
+
+
+                // consume the ')' token
+                if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+
+                let node_call = NodeTermFuncCall::new(ident, func_args);
+                let term = NodeTerm::new(Terms::NodeTermFuncCall(node_call));
+                return Some(term);
+            }
+        }
+
         // check for an in literal term for e.g: 1, 3, 10...
         if let Some(int_literal) = self.try_consume(TokenType::IntLiteral)
         {
