@@ -57,6 +57,8 @@ impl Lexer
         | (?P<while>\bwhile\b)
         | (?P<if>\bif\b)
         | (?P<else>\belse\b)
+        | (?P<function>\bfunction\b)
+        | (?P<return>\breturn\b)
         | (?P<ident>[a-zA-Z_][a-zA-Z0-9_]*)
         | (?P<and>&&)
         | (?P<or>\|\|)
@@ -64,6 +66,7 @@ impl Lexer
         | (?P<equals>=)
         | (?P<int>-?\d+)
         | (?P<semi>;)
+        | (?P<comma>,)
         | (?P<colon>:)
         | (?P<greater>>)
         | (?P<lesser><)
@@ -88,6 +91,14 @@ impl Lexer
             else if let Some(m) = caps.name("for")
             {
                 self.add_token(TokenType::For, m);
+            }
+            else if let Some(m) = caps.name("function")
+            {
+                self.add_token(TokenType::Function, m);
+            }
+            else if let Some(m) = caps.name("return")
+            {
+                self.add_token(TokenType::Return, m);
             }
             else if let Some(m) = caps.name("while")
             {
@@ -176,6 +187,10 @@ impl Lexer
             else if let Some(m) = caps.name("colon")
             {
                 self.add_token(TokenType::Colon, m);
+            }
+            else if let Some(m) = caps.name("comma")
+            {
+                self.add_token(TokenType::Comma, m);
             }
         }
     }

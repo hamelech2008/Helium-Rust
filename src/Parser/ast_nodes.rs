@@ -173,17 +173,17 @@ pub mod expr
                 op
             }
         }
-        
+
         pub fn get_condition(&self) -> &NodeExpr
         {
             &self.condition
         }
-        
+
         pub fn get_true_expr(&self) -> &NodeExpr
         {
             &self.true_expr
         }
-        
+
         pub fn get_false_expr(&self) -> &NodeExpr
         {
             &self.false_expr
@@ -398,13 +398,34 @@ pub mod stmt
         }
     }
 
+    
+    #[derive(Debug, Clone)]
+    pub struct NodeStmtReturn
+    {
+        expr: Option<NodeExpr>
+    }
+    impl NodeStmtReturn
+    {
+        pub fn new(expr: Option<NodeExpr>) -> Self
+        {
+            Self
+            {
+                expr
+            }
+        }
+        pub fn get_expr(&self) -> &Option<NodeExpr>
+        {
+            &self.expr
+        }
+    }
 
     #[derive(Debug, Clone)]
     pub enum Stmts
     {
         NodeStmtDec(NodeStmtDec), NodeStmtIf(NodeStmtIf),
         NodeStmtElse(NodeStmtElse), NodeStmtAssign(NodeStmtAssign),
-        NodeStmtForLoop(NodeStmtForLoop), NodeStmtWhileLoop(NodeStmtWhileLoop)
+        NodeStmtForLoop(NodeStmtForLoop), NodeStmtWhileLoop(NodeStmtWhileLoop),
+        NodeStmtReturn(NodeStmtReturn)
     }
     #[derive(Debug, Clone)]
     pub struct NodeStmt
@@ -452,17 +473,88 @@ impl NodeScope
 }
 
 
+
+
+pub mod functions
+{
+    use crate::lexer::token::Token;
+    use crate::parser::ast_nodes::NodeScope;
+
+    #[derive(Clone, Debug)]
+    pub struct FuncDecVar
+    {
+        ident: Token,
+    }
+    impl FuncDecVar
+    {
+        pub fn new(ident: Token) -> Self
+        {
+            Self
+            {
+                ident
+            }
+        }
+
+        pub fn get_ident(&self) -> &Token
+        {
+            &self.ident
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct NodeFuncDecl
+    {
+        ident: Token,
+        declared_vars: Vec<FuncDecVar>,
+        scope: NodeScope,
+    }
+
+    impl NodeFuncDecl
+    {
+        pub fn new(ident: Token, scope: NodeScope, declared_vars: Vec<FuncDecVar>) -> Self
+        {
+            Self
+            {
+                ident,
+                declared_vars,
+                scope
+            }
+        }
+
+        pub fn get_ident(&self) -> &Token
+        {
+            &self.ident
+        }
+        pub fn add_declared_var(&mut self, var: FuncDecVar)
+        {
+            self.declared_vars.push(var);
+        }
+
+        pub fn get_declared_vars(&self) -> &Vec<FuncDecVar>
+        {
+            &self.declared_vars
+        }
+        
+        pub fn get_scope(&self) -> &NodeScope
+        {
+            &self.scope
+        }
+    }
+}
+
+
 // the program entry point, the start of the AST
 #[derive(Debug)]
 pub struct NodeProg
 {
-    stmts : Vec<NodeStmt>
+    stmts : Vec<NodeStmt>,
+    functions: Vec<functions::NodeFuncDecl>
 }
 impl NodeProg
 {
     pub fn new() -> Self
     {
-        Self { stmts: Vec::new() }
+        Self { stmts: Vec::new(), functions: Vec::new() }
     }
 
     pub fn add_stmt(&mut self, stmt: NodeStmt)
@@ -473,5 +565,16 @@ impl NodeProg
     pub fn get_stmts(&self) -> &Vec<NodeStmt>
     {
         &self.stmts
+    }
+
+
+    pub fn get_functions(&self) -> &Vec<functions::NodeFuncDecl>
+    {
+        &self.functions
+    }
+
+    pub fn add_function(&mut self, function: functions::NodeFuncDecl)
+    {
+        self.functions.push(function);
     }
 }

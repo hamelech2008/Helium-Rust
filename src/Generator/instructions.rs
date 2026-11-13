@@ -182,6 +182,11 @@ pub fn cmovne(generator: &mut generator::Generator, src: &str, dst: &str)
     generator.output.push_str("\n");
 }
 
+pub fn retq(generator: &mut generator::Generator)
+{
+    generator.output.push_str("\tretq\n");
+}
+
 pub fn insert_label(generator: &mut generator::Generator, label: &str)
 {
     generator.output.push_str(label);

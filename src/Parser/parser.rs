@@ -5,7 +5,8 @@ use crate::lexer::{binary_prec};
 use crate::parser::ast_nodes::{stmt, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr, Operator, TerneryOp};
-use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtElse, NodeStmtIf};
+use crate::parser::ast_nodes::functions::{FuncDecVar, NodeFuncDecl};
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtElse, NodeStmtIf, NodeStmtReturn, Stmts};
 use crate::parser::ast_nodes::stmt::Stmts::{NodeStmtForLoop, NodeStmtWhileLoop};
 use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, Terms};
 macro_rules! check_next_tokens {
@@ -49,6 +50,7 @@ impl Parser
 
         while self.peek().is_some()
         {
+            if let Some(function) = self.parse_function() {prog.add_function(function);}
             if let Some(stmt) = self.parse_stmt(true) {prog.add_stmt(stmt);}
         }
 
@@ -56,9 +58,65 @@ impl Parser
     }
 
 
+    // function parsing
+
+    fn parse_function_param(&mut self) -> Option<FuncDecVar>
+    {
+        // consume the 'dec' token
+        if self.try_consume(TokenType::Dec).is_none() {error_expected!("dec");}
+        if let Some(ident) = self.try_consume(TokenType::Ident)
+        {
+            let func_param = FuncDecVar::new(ident);
+            return Some(func_param);
+        }
+        None
+    }
+    fn parse_function(&mut self) -> Option<NodeFuncDecl>
+    {
+        // consume the 'function' token
+        if self.try_consume(TokenType::Function).is_none() {error_expected!("function");}
+
+        if let Some(ident) = self.try_consume(TokenType::Ident)
+        {
+
+            // consume the '(' token
+            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!("(");}
+
+
+            let mut func_params = Vec::new();
+
+            while !self.try_peek(TokenType::RightBracket)
+            {
+                if let Some(func_param) = self.parse_function_param()
+                {
+                    func_params.push(func_param);
+                }
+
+                if self.try_peek(TokenType::Comma)
+                {
+
+                    // consume the ',' token
+                    if self.try_consume(TokenType::Comma).is_none() {error_expected!(",");}
+                }
+
+            }
+
+            // consume the ')' token
+            if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+
+            let scope = self.parse_scope();
+            let node_function_decl = NodeFuncDecl::new(ident, scope, func_params);
+
+            return Some(node_function_decl);
+        }
+        None
+    }
+
+
     // statement parsing
     fn parse_stmt(&mut self, expect_semi_colon: bool) -> Option<NodeStmt>
     {
+
         // check for a declaration statement
         if check_next_tokens!(self, TokenType::Dec, TokenType::Ident, TokenType::Equals)
         {
@@ -207,6 +265,33 @@ impl Parser
                 return Some(stmt);
             }
         }
+
+        // check for a return statement
+        if self.try_peek(TokenType::Return)
+        {
+
+            // consume the return statement
+            if self.try_consume(TokenType::Return).is_none() {error_expected!("return");}
+
+            if self.try_peek(TokenType::SemiColon)
+            {
+                // consume the ';' token
+                if self.try_consume(TokenType::SemiColon).is_none() {error_expected!(";");}
+
+                let return_node = NodeStmtReturn::new(None);
+                return Some(NodeStmt::new(Stmts::NodeStmtReturn(return_node)));
+            }
+            if let Some(expr) = self.parse_expr(0)
+            {
+                // consume the ';' token
+                if self.try_consume(TokenType::SemiColon).is_none() {error_expected!(";");}
+
+                let return_node = NodeStmtReturn::new(Some(expr));
+                return Some(NodeStmt::new(Stmts::NodeStmtReturn(return_node)));
+            }
+
+        }
+
         None
     }
 

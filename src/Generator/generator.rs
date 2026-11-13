@@ -2,9 +2,19 @@ use std::collections::HashMap;
 use std::process::exit;
 use crate::parser::ast_nodes::{NodeProg, NodeScope};
 use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr};
-use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtIf, NodeStmtWhileLoop, Stmts};
+use crate::parser::ast_nodes::functions::NodeFuncDecl;
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtIf, NodeStmtReturn, NodeStmtWhileLoop, Stmts};
 use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, NodeTermIdent, NodeTermIntLiteral, Terms};
 mod instructions;
+
+const FUNC_PARAM_REGS: [&'static str; 6] = [
+    "%rdi",
+    "%rsi",
+    "%rdx",
+    "%rcx",
+    "%r8",
+    "%r9",
+];
 
 
 pub struct Generator
@@ -36,7 +46,18 @@ impl Generator
         self.output.push_str(".global _start\n");
         self.output.push_str(".section .text\n");
         self.output.push_str("_start:\n");
+        self.output.push_str("\tcall main\n");
+        self.output.push_str("\tmovq %rax, %rdi\n");
+        self.output.push_str("\tmovq $60, %rax\n");
+        self.output.push_str("\tsyscall\n");
+
+        let funcs = self.prog.get_functions().to_vec();
         let stmts = self.prog.get_stmts().to_vec();
+
+        for func in &funcs
+        {
+            self.gen_function(func);
+        }
 
         for stmt in &stmts
         {
@@ -47,6 +68,45 @@ impl Generator
         self.output
     }
 
+    // functions generation
+    fn gen_function(&mut self, func: &NodeFuncDecl)
+    {
+
+        let func_label = &func.get_ident().data;
+        instructions::insert_label(self, &func_label);
+
+        instructions::push(self, "%rbp");
+        instructions::movq(self, "%rsp", "%rbp");
+
+        func.get_declared_vars().iter().enumerate().for_each(|(i, var)| {
+            if i < 6
+            {
+                let reg = FUNC_PARAM_REGS[i];
+
+
+                if self.vars.contains_key(&var.get_ident().data) // variable declared earlier
+                {
+                    exit(1); // TODO: replace with error expected
+                }
+                self.vars.insert(var.get_ident().data.to_string(), self.stack_size);
+                instructions::push(self, reg);
+            }
+        });
+
+
+        self.gen_scope(func.get_scope());
+
+
+        instructions::movq(self, "%rbp", "%rsp");
+        instructions::pop(self, "%rbp");
+        instructions::retq(self);
+
+    }
+
+
+
+
+    // statements generation
     fn gen_stmt(&mut self, stmt: &NodeStmt)
     {
         match &stmt.get_var()
@@ -56,12 +116,14 @@ impl Generator
             Stmts::NodeStmtAssign(node_assign) => self.gen_assign_stmt(node_assign),
             Stmts::NodeStmtForLoop(node_for_loop) => self.gen_for_loop_stmt(node_for_loop),
             Stmts::NodeStmtWhileLoop(node_while_loop) => self.gen_while_loop_stmt(node_while_loop),
+            Stmts::NodeStmtReturn(node_return) => self.gen_return_stmt(node_return),
             _ => exit(0) // TODO: replace with error expected
         }
     }
 
     fn gen_dec_stmt(&mut self, node_dec: &NodeStmtDec)
     {
+
         if self.vars.contains_key(&node_dec.ident.data) // variable declared earlier
         {
             exit(1); // TODO: replace with error expected
@@ -173,6 +235,20 @@ impl Generator
     }
 
 
+    pub fn gen_return_stmt(&mut self, node_return: &NodeStmtReturn)
+    {
+        if let Some(expr) = node_return.get_expr()
+        {
+            self.gen_expr(expr);
+            instructions::pop(self, "%rax");
+        }
+
+        instructions::movq(self, "%rbp", "%rsp");
+        instructions::pop(self, "%rbp");
+        instructions::retq(self);
+    }
+
+
     // Expressions
     fn gen_expr(&mut self, expr: &NodeExpr)
     {
@@ -208,6 +284,7 @@ impl Generator
 
     fn gen_ident_term(&mut self, node_ident: &NodeTermIdent)
     {
+
         let stack_location = match self.vars.get(&node_ident.ident.data)
         {
             Some(val) => (self.stack_size - val - 1) * 8,
@@ -413,7 +490,6 @@ impl Generator
         self.label_counter += 1;
         label
     }
-
 }
 
 
