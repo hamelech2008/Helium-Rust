@@ -9,7 +9,7 @@ use std::process::exit;
 use crate::lexer::{binary_prec};
 use crate::parser::ast_nodes::{DataType, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr, Operator};
+use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeArrayAccess, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr, Operator};
 use crate::parser::ast_nodes::functions::{FuncDecVar, NodeFuncDecl};
 use crate::parser::symbol_table::{Symbol, SymbolTable};
 
@@ -209,19 +209,7 @@ impl Parser
 
 
 
-    pub fn infer_bin_op_type(&self, lhs: &DataType, rhs: &DataType) -> Option<DataType>
-    {
-        match (lhs, rhs)
-        {
-            (DataType::Integer, DataType::Integer) => Some(DataType::Integer),
-            (DataType::Float, DataType::Float) | (DataType::Float, DataType::Integer) => Some(DataType::Float),
 
-            (DataType::Char, DataType::Integer) |
-            (DataType::Integer, DataType::Char) |
-            (DataType::Char, DataType::Char) => Some(DataType::Integer),
-            _ => None
-        }
-    }
 
 
     // expression parsing
@@ -229,7 +217,6 @@ impl Parser
     {
         let term_lhs = self.parse_term();
         if term_lhs.is_none() {return None;}
-
         let term_lhs = match term_lhs
         {
             Some(term) => term,
@@ -237,7 +224,12 @@ impl Parser
         };
         let expr_lhs_data_type = term_lhs.get_data_type().clone();
 
-        let mut expr_lhs = NodeExpr::new(Exprs::Term(term_lhs.clone()), expr_lhs_data_type);
+        let node_original_lhs = NodeExpr::new(
+            Exprs::Term(term_lhs.clone()),
+            expr_lhs_data_type
+        );
+
+        let mut expr_lhs = self.parse_postfix(node_original_lhs.clone()).unwrap_or_else(|| node_original_lhs);
 
         // loop on the expressions and get the precedence of the current token
         loop
@@ -331,6 +323,53 @@ impl Parser
     }
 
 
+
+    fn parse_postfix(&mut self, mut expr: NodeExpr) -> Option<NodeExpr>
+    {
+        loop
+        {
+            // get the token (account for last token)
+            let token = match self.peek()
+            {
+                Some(token) => token,
+                None => return Some(expr),
+            };
+            // match the token
+            match token.token_type
+            {
+                // array indexing ('[')
+                TokenType::LeftSquare =>
+                    {
+                        self.consume(); // consume the '[' token
+
+                        // parse the index
+                        if let Some(index) = self.parse_expr(0)
+                        {
+                            // consume the ']' token
+                            if self.try_consume(TokenType::RightSquare).is_none() {error_expected!("]");}
+
+                            // get the type of the element
+                            let element_type = match expr.get_data_type()
+                            {
+                                DataType::Array(inner) => (*inner).clone(),
+                                _ => return None
+                            };
+
+                            // create the access node
+                            let node_access = NodeArrayAccess::new(
+                                expr, index, element_type.clone()
+                            );
+
+                            // update the expression
+                            expr = NodeExpr::new(Exprs::ArrayAccess(node_access), element_type);
+                        }
+                    },
+                _ => return Some(expr)
+            }
+        }
+    }
+
+
     // scope parsing
     fn parse_scope(&mut self) -> NodeScope
     {
@@ -356,6 +395,22 @@ impl Parser
         if self.try_consume(TokenType::RightCurly).is_none() {error_expected!("}");}
 
         node_scope
+    }
+
+
+    // get data type of binary operation
+    pub fn infer_bin_op_type(&self, lhs: &DataType, rhs: &DataType) -> Option<DataType>
+    {
+        match (lhs, rhs)
+        {
+            (DataType::Integer, DataType::Integer) => Some(DataType::Integer),
+            (DataType::Float, DataType::Float) | (DataType::Float, DataType::Integer) => Some(DataType::Float),
+
+            (DataType::Char, DataType::Integer) |
+            (DataType::Integer, DataType::Char) |
+            (DataType::Char, DataType::Char) => Some(DataType::Integer),
+            _ => None
+        }
     }
 
 

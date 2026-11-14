@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::process::exit;
 use crate::parser::ast_nodes::NodeProg;
-use crate::parser::ast_nodes::expr::{Exprs, NodeExpr, NodeTerneryExpr};
+use crate::parser::ast_nodes::expr::{Exprs, NodeArrayAccess, NodeExpr, NodeTerneryExpr};
 use crate::parser::ast_nodes::functions::NodeFuncDecl;
 mod instructions;
 mod stmt_generator;
@@ -119,7 +119,8 @@ impl Generator
             Exprs::Term(node_term) => self.gen_term(node_term),
             Exprs::BinExpr(node_bin_expr) => self.gen_bin_expr(node_bin_expr),
             Exprs::LogicExpr(node_logic_expr) => self.gen_logic_expr(node_logic_expr),
-            Exprs::TerneryExpr(node_ternery_expr) => self.gen_ternery_expr(node_ternery_expr)
+            Exprs::TerneryExpr(node_ternery_expr) => self.gen_ternery_expr(node_ternery_expr),
+            Exprs::ArrayAccess(node_array_access) => self.gen_array_index_expr(node_array_access),
         }
     }
 
@@ -156,6 +157,17 @@ impl Generator
         assert_eq!(true_stack_size, false_stack_size); // make sure both stack sizes are the same
 
         self.stack_size = true_stack_size;
+    }
+
+
+    fn gen_array_index_expr(&mut self, node_array_access: &NodeArrayAccess)
+    {
+        self.gen_expr(&*node_array_access.array);
+        self.gen_expr(&*node_array_access.index);
+        instructions::pop(self, "%rax"); // index
+        instructions::pop(self, "%rbx"); // array
+        instructions::movq(self, "(%rbx, %rax, 8)", "%rax"); // calculate offset fitting for a byte rbx[rax * 8]
+        instructions::push(self, "%rax");
     }
 
     // helper functions

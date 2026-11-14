@@ -330,8 +330,33 @@ pub mod expr
 
 
     #[derive(Debug, Clone)]
+    pub struct NodeArrayAccess
+    {
+        pub array : Box<NodeExpr>,
+        pub index : Box<NodeExpr>,
+        pub data_type: DataType
+    }
+    impl NodeArrayAccess
+    {
+        pub fn new(array: NodeExpr, index: NodeExpr, data_type: DataType) -> Self
+        {
+            Self
+            {
+                array: Box::new(array),
+                index: Box::new(index),
+                data_type
+            }
+        }
+    }
 
-    pub enum Exprs { Term(term::NodeTerm), BinExpr(NodeBinExpr), LogicExpr(NodeLogicExpr), TerneryExpr(NodeTerneryExpr) }
+    #[derive(Debug, Clone)]
+
+    pub enum Exprs
+    {
+        Term(term::NodeTerm), BinExpr(NodeBinExpr),
+        LogicExpr(NodeLogicExpr), TerneryExpr(NodeTerneryExpr),
+        ArrayAccess(NodeArrayAccess)
+    }
     #[derive(Debug, Clone)]
 
     pub struct NodeExpr
