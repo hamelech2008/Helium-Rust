@@ -1,22 +1,47 @@
 use crate::parser::ast_nodes::stmt::NodeStmt;
 use crate::lexer::token::Token;
 
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum DataType
+{
+    Integer, Char, Float
+}
+
+
+impl TryFrom<&str> for DataType
+{
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error>
+    {
+        match value
+        {
+            "Integer" => Ok(Self::Integer),
+            "Float" => Ok(Self::Float),
+            "Char" => Ok(Self::Char),
+            _ => Err(format!("Unknown type '{}'", value)),
+        }
+    }
+}
+
+
 // module for term nodes, identifiers and literal values
 pub mod term
 {
-    use crate::lexer::token;
     use crate::lexer::token::Token;
+    use crate::parser::ast_nodes::DataType;
     use crate::parser::ast_nodes::expr::NodeExpr;
 
     #[derive(Debug, Clone)]
 
     pub struct NodeTermIntLiteral
     {
-        pub value: token::Token
+        pub value: Token
     }
     impl NodeTermIntLiteral
     {
-        pub fn get_value(&self) -> &token::Token
+        pub fn get_value(&self) -> &Token
         {
             &self.value
         }
@@ -25,7 +50,8 @@ pub mod term
     #[derive(Debug, Clone)]
     pub struct NodeTermIdent
     {
-        pub ident: token::Token
+        pub ident: Token,
+        pub data_type: DataType
     }
 
     #[derive(Clone, Debug)]
@@ -82,18 +108,24 @@ pub mod term
 
     pub struct NodeTerm
     {
-        var : Terms
+        var : Terms,
+        data_type: DataType
     }
     impl NodeTerm
     {
-        pub fn new(term: Terms) -> Self
+        pub fn new(term: Terms, data_type: DataType) -> Self
         {
-            Self { var: term }
+            Self { var: term, data_type }
         }
 
         pub fn get_var(&self) -> &Terms
         {
             &self.var
+        }
+
+        pub fn get_data_type(&self) -> &DataType
+        {
+            &self.data_type
         }
     }
 }
@@ -101,7 +133,7 @@ pub mod term
 // module for expressions, terms, binary and logic expressions
 pub mod expr
 {
-    use crate::parser::ast_nodes::term;
+    use crate::parser::ast_nodes::{term, DataType};
 
 
     #[derive(Clone, Debug)]
@@ -111,17 +143,19 @@ pub mod expr
     {
         lhs: Box<NodeExpr>,
         rhs: Box<NodeExpr>,
-        op: BinOp
+        op: BinOp,
+        data_type: DataType
     }
     impl NodeBinExpr
     {
-        pub fn new(lhs: NodeExpr, rhs: NodeExpr, op: BinOp) -> Self
+        pub fn new(lhs: NodeExpr, rhs: NodeExpr, op: BinOp, data_type: DataType) -> Self
         {
             Self
             {
                 lhs: Box::new(lhs),
                 rhs: Box::new(rhs),
-                op
+                op,
+                data_type
             }
         }
 
@@ -149,7 +183,8 @@ pub mod expr
     {
         lhs: Box<NodeExpr>,
         rhs: Box<NodeExpr>,
-        op: LogicOp
+        op: LogicOp,
+        data_type: DataType
     }
     impl NodeLogicExpr
     {
@@ -159,7 +194,8 @@ pub mod expr
             {
                 lhs: Box::new(lhs),
                 rhs: Box::new(rhs),
-                op
+                op,
+                data_type: DataType::Integer
             }
         }
         pub fn get_lhs(&self) -> &NodeExpr
@@ -186,17 +222,19 @@ pub mod expr
         condition: Box<NodeExpr>,
         true_expr: Box<NodeExpr>,
         false_expr: Box<NodeExpr>,
+        data_type: DataType
     }
 
     impl NodeTerneryExpr
     {
-        pub fn new(condition: NodeExpr, true_expr: NodeExpr, false_expr: NodeExpr) -> Self
+        pub fn new(condition: NodeExpr, true_expr: NodeExpr, false_expr: NodeExpr, data_type: DataType) -> Self
         {
             Self
             {
                 condition: Box::new(condition),
                 true_expr: Box::new(true_expr),
-                false_expr: Box::new(false_expr)
+                false_expr: Box::new(false_expr),
+                data_type
             }
         }
 
@@ -231,13 +269,14 @@ pub mod expr
 
     pub struct NodeExpr
     {
-        var: Exprs
+        var: Exprs,
+        data_type: DataType
     }
     impl NodeExpr
     {
-        pub fn new(expr: Exprs) -> Self
+        pub fn new(expr: Exprs, data_type: DataType) -> Self
         {
-            Self { var: expr }
+            Self { var: expr, data_type }
         }
 
         pub fn get_var(&self) -> &Exprs
@@ -249,13 +288,18 @@ pub mod expr
         {
             self.var = expr;
         }
+
+        pub fn get_data_type(&self) -> DataType
+        {
+            self.data_type.clone()
+        }
     }
 }
 
 // module for statements, for variable creations, assignments, func calls etc...
 pub mod stmt
 {
-    use crate::parser::ast_nodes::{expr, Token, NodeScope};
+    use crate::parser::ast_nodes::{Token, NodeScope};
     use crate::parser::ast_nodes::expr::NodeExpr;
 
     #[derive(Debug, Clone)]
@@ -263,7 +307,7 @@ pub mod stmt
     pub struct NodeStmtDec
     {
         pub ident: Token,
-        pub expr: expr::NodeExpr
+        pub expr: NodeExpr
     }
 
     #[derive(Debug, Clone)]
@@ -533,20 +577,22 @@ impl NodeScope
 pub mod functions
 {
     use crate::lexer::token::Token;
-    use crate::parser::ast_nodes::NodeScope;
+    use crate::parser::ast_nodes::{DataType, NodeScope};
 
     #[derive(Clone, Debug)]
     pub struct FuncDecVar
     {
         ident: Token,
+        data_type: DataType
     }
     impl FuncDecVar
     {
-        pub fn new(ident: Token) -> Self
+        pub fn new(ident: Token, data_type: DataType) -> Self
         {
             Self
             {
-                ident
+                ident,
+                data_type
             }
         }
 

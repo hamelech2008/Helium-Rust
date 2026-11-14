@@ -3,12 +3,15 @@ pub mod ast_nodes;
 pub mod stmt_parser;
 pub mod term_parser;
 
+pub mod symbol_table;
+
 use std::process::exit;
 use crate::lexer::{binary_prec};
-use crate::parser::ast_nodes::{NodeProg, NodeScope};
+use crate::parser::ast_nodes::{DataType, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr, Operator};
 use crate::parser::ast_nodes::functions::{FuncDecVar, NodeFuncDecl};
+use crate::parser::symbol_table::{Symbol, SymbolTable};
 
 #[macro_export]
 macro_rules! check_next_tokens {
@@ -29,11 +32,21 @@ macro_rules! error_expected {
     }
 }
 
+#[macro_export]
+macro_rules! type_error {
+    ($token:expr) =>
+    {
+        eprintln!("Parse Error: expected type '{}' at line <ADD LINE>", $token);
+        exit(-1);
+    }
+}
+
 pub struct Parser
 {
 
     tokens : Vec<Token>,
-    index: i32
+    index: i32,
+    pub symbol_table : SymbolTable,
 }
 
 impl Parser
@@ -43,7 +56,8 @@ impl Parser
         Self
         {
             tokens,
-            index: 0
+            index: 0,
+            symbol_table: SymbolTable::new(),
         }
     }
 
@@ -68,8 +82,17 @@ impl Parser
         if self.try_consume(TokenType::Dec).is_none() {error_expected!("dec");}
         if let Some(ident) = self.try_consume(TokenType::Ident)
         {
-            let func_param = FuncDecVar::new(ident);
-            return Some(func_param);
+            // consume the ':' token
+            if self.try_consume(TokenType::Colon).is_none() {error_expected!(":");}
+
+            if let Some(data_type_ident) = self.try_consume(TokenType::Ident)
+            {
+                let data_type = DataType::try_from(data_type_ident.data.as_str()).unwrap();
+                let func_param = FuncDecVar::new(ident, data_type);
+                return Some(func_param);
+            }
+
+
         }
         None
     }
@@ -87,6 +110,7 @@ impl Parser
 
             let mut func_params = Vec::new();
 
+            // consume all the function parameters
             while !self.try_peek(TokenType::RightBracket)
             {
                 if let Some(func_param) = self.parse_function_param()
@@ -105,6 +129,21 @@ impl Parser
 
             // consume the ')' token
             if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+
+
+            // check for "-> return_type" tokens
+            if check_next_tokens!(self, TokenType::Subtraction, TokenType::Greater, TokenType::Ident)
+            {
+                if self.try_consume(TokenType::Subtraction).is_none() {error_expected!("-");}
+                if self.try_consume(TokenType::Greater).is_none() {error_expected!(">");}
+                if let Some(return_data_type) = self.try_consume(TokenType::Ident)
+                {
+                    let data_type = DataType::try_from(return_data_type.data.as_str()).unwrap();
+                    let symbol = Symbol::Function {return_type: data_type};
+                    self.symbol_table.insert(ident.clone().data, symbol);
+                }
+            }
+
 
             let scope = self.parse_scope();
             let node_function_decl = NodeFuncDecl::new(ident, scope, func_params);
@@ -148,8 +187,9 @@ impl Parser
             Some(term) => term,
             None => exit(1)
         };
+        let expr_lhs_data_type = term_lhs.get_data_type().clone();
 
-        let mut expr_lhs = NodeExpr::new(Exprs::Term(term_lhs));
+        let mut expr_lhs = NodeExpr::new(Exprs::Term(term_lhs.clone()), expr_lhs_data_type);
 
         // loop on the expressions and get the precedence of the current token
         loop
@@ -196,7 +236,11 @@ impl Parser
             {
                 Operator::BinOp(bin_op) =>
                     {
-                        let bin_node = NodeBinExpr::new(expr_lhs.clone(), expr_rhs.unwrap(), bin_op);
+                        if expr_lhs.get_data_type() != expr_lhs.get_data_type()
+                        {
+                            type_error!("test"); // TODO: replace with actual type
+                        }
+                        let bin_node = NodeBinExpr::new(expr_lhs.clone(), expr_rhs.unwrap(), bin_op, expr_lhs.get_data_type());
                         expr_lhs.set_var(Exprs::BinExpr(bin_node));
                     },
                 Operator::LogicOp(logic_op) =>
@@ -212,8 +256,13 @@ impl Parser
                         // parse the ternery "false" branch
                         if let Some(false_expr_branch) = self.parse_expr(next_min_prec)
                         {
+                            if expr_lhs.get_data_type() != expr_lhs.get_data_type()
+                            {
+                                type_error!("test"); // TODO: replace with actual type
+                            }
+
                             let ternery_node = NodeTerneryExpr::new(
-                                expr_lhs.clone(), expr_rhs.unwrap(), false_expr_branch
+                                expr_lhs.clone(), expr_rhs.unwrap(), false_expr_branch, expr_lhs.get_data_type()
                             );
 
                             expr_lhs.set_var(Exprs::TerneryExpr(ternery_node));

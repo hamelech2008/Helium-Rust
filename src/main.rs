@@ -29,12 +29,16 @@ fn main()
     let mut lexer = lexer::Lexer::new();
     lexer.tokenize(&source_code);
 
+    // println!("{:#?}", lexer.tokens);
+
     let mut parser = parser::Parser::new(lexer.tokens);
     let node_prog = parser.parse();
 
     // println!("{:#?}", node_prog);
     let generator = generator::Generator::new(node_prog);
     let output = generator.generate_prog();
+
+    // println!("{:#?}", parser.symbol_table);
 
     let elapsed = start.elapsed();
     println!("Execution time: {:?}", elapsed);

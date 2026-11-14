@@ -1,6 +1,4 @@
 function main()
 {
-    dec x = 10 + 3;
-    dec y = x * 2;
-    return y;
+    return 0;
 }

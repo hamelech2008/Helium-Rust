@@ -6,6 +6,8 @@ use crate::parser::ast_nodes::stmt::Stmts::{NodeStmtForLoop, NodeStmtWhileLoop};
 use crate::parser::Parser;
 use crate::check_next_tokens;
 use crate::error_expected;
+use crate::parser::symbol_table::Symbol;
+
 impl Parser
 {
     // statement parsing
@@ -86,12 +88,17 @@ impl Parser
                 }
             }
 
+
+            let data_type = Symbol::Variable(expr.get_data_type());
             // generate the declare statement node
             let node_dec = stmt::NodeStmtDec
             {
                 ident,
                 expr
             };
+
+            self.symbol_table.insert(node_dec.ident.data.clone(), data_type);
+
             let stmt = NodeStmt::new(Stmts::NodeStmtDec(node_dec));
 
             return Some(stmt);
@@ -144,6 +151,9 @@ impl Parser
 
         if let Some(expr) = self.parse_expr(0)
         {
+            let data_type = Symbol::Variable(expr.get_data_type());
+            self.symbol_table.insert(ident.clone().data, data_type); // TODO: replace .clone
+
             let node_assign = NodeStmtAssign::new(ident, expr);
 
             if expect_semi_colon

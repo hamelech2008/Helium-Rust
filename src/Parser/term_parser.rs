@@ -5,6 +5,8 @@ use crate::parser::{ast_nodes, Parser};
 use crate::parser::ast_nodes::expr::NodeExpr;
 use crate::check_next_tokens;
 use crate::error_expected;
+use crate::parser::ast_nodes::DataType;
+
 impl Parser
 {
     // term parsing
@@ -45,19 +47,23 @@ impl Parser
             value: literal.clone()
         };
 
-        let term = NodeTerm::new(Terms::IntLiteral(node_term_literal));
+        let term = NodeTerm::new(Terms::IntLiteral(node_term_literal), DataType::Integer);
 
         Some(term)
     }
 
     fn parse_ident_term(&self, ident: Token) -> Option<NodeTerm>
     {
+        let data_type = self.symbol_table.get_variable(&ident.data);
         let node_term_ident = ast_nodes::term::NodeTermIdent
         {
-            ident
+            ident,
+            data_type
         };
 
-        let term = NodeTerm::new(Terms::Ident(node_term_ident));
+        // TODO: find a way to pass the data type without cloning
+        let data_type = node_term_ident.clone().data_type;
+        let term = NodeTerm::new(Terms::Ident(node_term_ident), data_type);
         Some(term)
     }
 
@@ -65,8 +71,10 @@ impl Parser
     {
         // consume the ')' token
         if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+        let data_type = expr.get_data_type();
+        
         let term_bracket = Terms::Bracket(NodeTermBracket::new(expr));
-        Some(NodeTerm::new(term_bracket))
+        Some(NodeTerm::new(term_bracket, data_type))
     }
 
     fn parse_func_call_term(&mut self) -> Option<NodeTerm>
@@ -83,7 +91,9 @@ impl Parser
             if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
 
             let node_call = NodeTermFuncCall::new(ident, func_args);
-            let term = NodeTerm::new(Terms::NodeTermFuncCall(node_call));
+
+            let data_type = self.symbol_table.get_function(&node_call.get_ident().data);
+            let term = NodeTerm::new(Terms::NodeTermFuncCall(node_call), data_type);
             return Some(term);
         }
         None
