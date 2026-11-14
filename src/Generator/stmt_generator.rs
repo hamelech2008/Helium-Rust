@@ -1,0 +1,165 @@
+use std::process::exit;
+use crate::generator::{instructions, Generator, FUNC_PARAM_REGS};
+use crate::parser::ast_nodes::NodeScope;
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, NodeStmtWhileLoop, Stmts};
+
+impl Generator
+{
+    // statements generation
+    pub(super) fn gen_stmt(&mut self, stmt: &NodeStmt)
+    {
+        match &stmt.get_var()
+        {
+            Stmts::NodeStmtDec(node_dec) => self.gen_dec_stmt(node_dec),
+            Stmts::NodeStmtIf(node_if) => self.gen_if_stmt(node_if),
+            Stmts::NodeStmtAssign(node_assign) => self.gen_assign_stmt(node_assign),
+            Stmts::NodeStmtForLoop(node_for_loop) => self.gen_for_loop_stmt(node_for_loop),
+            Stmts::NodeStmtWhileLoop(node_while_loop) => self.gen_while_loop_stmt(node_while_loop),
+            Stmts::NodeStmtReturn(node_return) => self.gen_return_stmt(node_return),
+            Stmts::NodeStmtFuncCall(node_call) => self.gen_func_call_stmt(node_call)
+        }
+    }
+
+    pub(super) fn gen_dec_stmt(&mut self, node_dec: &NodeStmtDec)
+    {
+
+        if self.vars.contains_key(&node_dec.ident.data) // variable declared earlier
+        {
+            exit(1); // TODO: replace with error expected
+        }
+        self.vars.insert(node_dec.ident.data.to_string(), self.stack_size);
+        self.gen_expr(&node_dec.expr);
+    }
+
+    pub(super) fn gen_if_stmt(&mut self, node_if: &NodeStmtIf)
+    {
+        let after_if_label = self.gen_label();
+        let after_else_label = self.gen_label();
+        self.gen_expr(node_if.get_expr());
+
+        instructions::pop(self, "%rax");
+        instructions::testq(self, "%rax");
+        instructions::jz(self, &after_if_label);
+
+        self.gen_scope(node_if.get_scope());
+
+        instructions::jmp(self, &after_else_label);
+
+
+        instructions::insert_label(self, &after_if_label);
+        match node_if.get_else_scope()
+        {
+            Some(node_else) =>
+                {
+                    self.gen_else_stmt(node_else);
+                    instructions::insert_label(self, &after_else_label);
+                },
+            None => ()
+        }
+
+
+    }
+    pub(super) fn gen_else_stmt(&mut self, node_else: &NodeStmtElse)
+    {
+        self.gen_scope(node_else.get_scope());
+    }
+
+    pub(super) fn gen_scope(&mut self, node_scope: &NodeScope)
+    {
+        for stmt in node_scope.get_stmts()
+        {
+            self.gen_stmt(stmt);
+        }
+    }
+
+    pub(super) fn gen_assign_stmt(&mut self, node_assign: &NodeStmtAssign)
+    {
+        if !self.vars.contains_key(&node_assign.get_ident().data) // variable doesn't exist
+        {
+            exit(1); // TODO: replace with error expected
+        }
+        self.gen_expr(node_assign.get_expr());
+        instructions::pop(self, "%rax");
+        let stack_location = match self.vars.get(&node_assign.get_ident().data)
+        {
+            Some(val) => (self.stack_size - val - 1) * 8,
+            None => exit(0) // TODO: replace with error expected
+        };
+
+        instructions::movq(self, "%rax", &format!("{stack_location}(%rsp)"));
+    }
+
+
+    pub(super) fn gen_for_loop_stmt(&mut self, node_for_loop: &NodeStmtForLoop)
+    {
+        let start_label = self.gen_label();
+        let end_label = self.gen_label();
+
+        self.gen_stmt(node_for_loop.get_init_stmt());
+        instructions::insert_label(self, &start_label);
+
+        self.gen_expr(node_for_loop.get_expr());
+        instructions::pop(self, "%rax");
+
+        instructions::testq(self, "%rax");
+        instructions::jz(self, &end_label);
+
+        self.gen_scope(node_for_loop.get_scope());
+        self.gen_stmt(node_for_loop.get_stmt());
+        instructions::jmp(self, &start_label);
+        instructions::insert_label(self, &end_label);
+
+    }
+
+
+    pub(super) fn gen_while_loop_stmt(&mut self, node_while_loop: &NodeStmtWhileLoop)
+    {
+        let loop_start = self.gen_label();
+        let loop_end = self.gen_label();
+
+        instructions::insert_label(self, &loop_start);
+
+        self.gen_expr(node_while_loop.get_expr());
+        instructions::pop(self, "%rax");
+
+        instructions::testq(self, "%rax");
+        instructions::jz(self, &loop_end);
+
+        self.gen_scope(node_while_loop.get_scope());
+
+        instructions::jmp(self, &loop_start);
+
+        instructions::insert_label(self, &loop_end);
+
+    }
+
+
+    pub(super) fn gen_return_stmt(&mut self, node_return: &NodeStmtReturn)
+    {
+        if let Some(expr) = node_return.get_expr()
+        {
+            self.gen_expr(expr);
+            instructions::pop(self, "%rax");
+        }
+
+        instructions::movq(self, "%rbp", "%rsp");
+        instructions::pop(self, "%rbp");
+        instructions::retq(self);
+    }
+
+    pub(super) fn gen_func_call_stmt(&mut self, node_call_func: &NodeStmtFuncCall)
+    {
+        node_call_func.get_args().iter().enumerate().for_each(|(i, var)| {
+            let reg = FUNC_PARAM_REGS[i];
+
+            if i < 6
+            {
+                self.gen_expr(var);
+                instructions::pop(self, reg);
+            }
+        });
+
+        instructions::call(self, &node_call_func.get_ident().data);
+    }
+
+}
