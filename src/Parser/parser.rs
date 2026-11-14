@@ -88,6 +88,11 @@ impl Parser
             if let Some(data_type_ident) = self.try_consume(TokenType::Ident)
             {
                 let data_type = DataType::try_from(data_type_ident.data.as_str()).unwrap();
+
+                // TODO: fix func args and sym table
+                let sym = Symbol::Variable(data_type.clone());
+                self.symbol_table.insert(ident.clone().data, sym);
+
                 let func_param = FuncDecVar::new(ident, data_type);
                 return Some(func_param);
             }
@@ -117,6 +122,7 @@ impl Parser
                 {
                     func_params.push(func_param);
                 }
+
 
                 if self.try_peek(TokenType::Comma)
                 {
@@ -173,6 +179,22 @@ impl Parser
 
         }
         func_args
+    }
+
+
+
+    pub fn infer_bin_op_type(&self, lhs: &DataType, rhs: &DataType) -> Option<DataType>
+    {
+        match (lhs, rhs)
+        {
+            (DataType::Integer, DataType::Integer) => Some(DataType::Integer),
+            (DataType::Float, DataType::Float) | (DataType::Float, DataType::Integer) => Some(DataType::Float),
+
+            (DataType::Char, DataType::Integer) |
+            (DataType::Integer, DataType::Char) |
+            (DataType::Char, DataType::Char) => Some(DataType::Integer),
+            _ => None
+        }
     }
 
 
@@ -236,12 +258,20 @@ impl Parser
             {
                 Operator::BinOp(bin_op) =>
                     {
-                        if expr_lhs.get_data_type() != expr_lhs.get_data_type()
+                        let expr_rhs = expr_rhs.unwrap();
+
+                        let res_type = self.infer_bin_op_type(&expr_lhs.get_data_type(), &expr_rhs.get_data_type());
+
+                        if res_type.is_none()
                         {
-                            type_error!("test"); // TODO: replace with actual type
+                            type_error!(String::from(expr_rhs.get_data_type()));
                         }
-                        let bin_node = NodeBinExpr::new(expr_lhs.clone(), expr_rhs.unwrap(), bin_op, expr_lhs.get_data_type());
+
+                        let res_type = res_type.unwrap();
+
+                        let bin_node = NodeBinExpr::new(expr_lhs.clone(), expr_rhs, bin_op);
                         expr_lhs.set_var(Exprs::BinExpr(bin_node));
+                        expr_lhs.set_data_type(res_type);
                     },
                 Operator::LogicOp(logic_op) =>
                     {

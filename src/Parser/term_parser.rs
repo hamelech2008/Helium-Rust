@@ -24,6 +24,11 @@ impl Parser
             return self.parse_int_literal_term(&int_literal);
         }
 
+        if let Some(char_literal) = self.try_consume(TokenType::CharLiteral)
+        {
+            return self.parse_char_literal_term(&char_literal);
+        }
+
         // check for an identifier term - variables
         if let Some(ident) = self.try_consume(TokenType::Ident)
         {
@@ -52,6 +57,15 @@ impl Parser
         Some(term)
     }
 
+    fn parse_char_literal_term(&self, literal: &Token) -> Option<NodeTerm>
+    {
+        let node_term_literal = ast_nodes::term::NodeTermCharLiteral::new(literal.clone());
+
+        let term = NodeTerm::new(Terms::CharLiteral(node_term_literal), DataType::Char);
+
+        Some(term)
+    }
+
     fn parse_ident_term(&self, ident: Token) -> Option<NodeTerm>
     {
         let data_type = self.symbol_table.get_variable(&ident.data);
@@ -72,7 +86,7 @@ impl Parser
         // consume the ')' token
         if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
         let data_type = expr.get_data_type();
-        
+
         let term_bracket = Terms::Bracket(NodeTermBracket::new(expr));
         Some(NodeTerm::new(term_bracket, data_type))
     }

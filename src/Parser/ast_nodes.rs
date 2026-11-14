@@ -25,6 +25,18 @@ impl TryFrom<&str> for DataType
     }
 }
 
+impl From<DataType> for String
+{
+    fn from(value: DataType) -> String
+    {
+        match value
+        {
+            DataType::Integer => String::from("Integer"),
+            DataType::Float => String::from("Float"),
+            DataType::Char => String::from("Char")
+        }
+    }
+}
 
 // module for term nodes, identifiers and literal values
 pub mod term
@@ -46,6 +58,21 @@ pub mod term
             &self.value
         }
     }
+
+    #[derive(Debug, Clone)]
+    pub struct NodeTermCharLiteral
+    {
+        value: Token
+    }
+    impl NodeTermCharLiteral
+    {
+        pub fn new(value: Token) -> Self {Self{value}}
+        pub fn get_value(&self) -> &Token
+        {
+            &self.value
+        }
+    }
+
 
     #[derive(Debug, Clone)]
     pub struct NodeTermIdent
@@ -102,7 +129,7 @@ pub mod term
     }
 
     #[derive(Debug, Clone)]
-    pub enum Terms { Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral), Bracket(NodeTermBracket), NodeTermFuncCall(NodeTermFuncCall) }
+    pub enum Terms { Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral), CharLiteral(NodeTermCharLiteral), Bracket(NodeTermBracket), NodeTermFuncCall(NodeTermFuncCall) }
 
     #[derive(Debug, Clone)]
 
@@ -143,19 +170,17 @@ pub mod expr
     {
         lhs: Box<NodeExpr>,
         rhs: Box<NodeExpr>,
-        op: BinOp,
-        data_type: DataType
+        op: BinOp
     }
     impl NodeBinExpr
     {
-        pub fn new(lhs: NodeExpr, rhs: NodeExpr, op: BinOp, data_type: DataType) -> Self
+        pub fn new(lhs: NodeExpr, rhs: NodeExpr, op: BinOp) -> Self
         {
             Self
             {
                 lhs: Box::new(lhs),
                 rhs: Box::new(rhs),
-                op,
-                data_type
+                op
             }
         }
 
@@ -287,6 +312,11 @@ pub mod expr
         pub fn set_var(&mut self, expr: Exprs)
         {
             self.var = expr;
+        }
+
+        pub fn set_data_type(&mut self, data_type: DataType)
+        {
+            self.data_type = data_type;
         }
 
         pub fn get_data_type(&self) -> DataType

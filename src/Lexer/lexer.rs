@@ -1,5 +1,5 @@
 use regex::{Match, Regex};
-use crate::lexer::token::TokenType;
+use crate::lexer::token::{Token, TokenType};
 
 
 
@@ -68,6 +68,7 @@ impl Lexer
         | (?P<not_equal>!=)
         | (?P<equals_to>==)
         | (?P<equals>=)
+        | (?P<char>'[^']')
         | (?P<int>-?\d+)
         | (?P<semi>;)
         | (?P<comma>,)
@@ -129,6 +130,10 @@ impl Lexer
             else if let Some(m) = caps.name("int")
             {
                 self.add_token(TokenType::IntLiteral, m);
+            }
+            else if let Some(m) = caps.name("char")
+            {
+                self.add_token(TokenType::CharLiteral, m);
             }
             else if let Some(m) = caps.name("semi")
             {

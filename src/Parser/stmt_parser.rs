@@ -87,8 +87,6 @@ impl Parser
                     error_expected!(";");
                 }
             }
-
-
             let data_type = Symbol::Variable(expr.get_data_type());
             // generate the declare statement node
             let node_dec = stmt::NodeStmtDec

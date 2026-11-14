@@ -1,6 +1,6 @@
 use std::process::exit;
 use crate::generator::{instructions, Generator, FUNC_PARAM_REGS};
-use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, NodeTermFuncCall, NodeTermIdent, NodeTermIntLiteral, Terms};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, NodeTermCharLiteral, NodeTermFuncCall, NodeTermIdent, NodeTermIntLiteral, Terms};
 
 impl Generator
 {
@@ -10,6 +10,7 @@ impl Generator
         match term.get_var()
         {
             Terms::IntLiteral(node_int_literal) => self.gen_int_literal_term(node_int_literal),
+            Terms::CharLiteral(node_char_literal) => self.gen_char_literal_term(node_char_literal),
             Terms::Ident(node_ident) => self.gen_ident_term(node_ident),
             Terms::Bracket(node_bracket) => self.gen_bracket_term(node_bracket),
             Terms::NodeTermFuncCall(node_call) => self.gen_call_term(node_call)
@@ -19,6 +20,13 @@ impl Generator
     pub(super) fn gen_int_literal_term(&mut self, node_int_literal: &NodeTermIntLiteral)
     {
         let literal_value = &*node_int_literal.get_value().data;
+        instructions::movq_immediate(self, literal_value, "%rax");
+        instructions::push(self, "%rax");
+    }
+
+    pub(super) fn gen_char_literal_term(&mut self, node_char_literal: &NodeTermCharLiteral)
+    {
+        let literal_value = &*node_char_literal.get_value().data;
         instructions::movq_immediate(self, literal_value, "%rax");
         instructions::push(self, "%rax");
     }
