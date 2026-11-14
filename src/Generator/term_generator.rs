@@ -35,7 +35,7 @@ impl Generator
     pub(super) fn gen_ident_term(&mut self, node_ident: &NodeTermIdent)
     {
 
-        let stack_location = match self.vars.get(&node_ident.ident.data)
+        let stack_location = match self.get(&node_ident.ident.data)
         {
             Some(val) => (self.stack_size - val - 1) * 8,
             None => exit(1) // TODO: replace with error expected

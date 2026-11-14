@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::process::exit;
 use crate::generator::{instructions, Generator, FUNC_PARAM_REGS};
 use crate::parser::ast_nodes::NodeScope;
@@ -22,12 +23,12 @@ impl Generator
 
     pub(super) fn gen_dec_stmt(&mut self, node_dec: &NodeStmtDec)
     {
-
-        if self.vars.contains_key(&node_dec.ident.data) // variable declared earlier
+        if self.contains_key(&node_dec.ident.data) // variable declared earlier
         {
-            exit(1); // TODO: replace with error expected
+            eprintln!("Variable \"{}\" is already defined", node_dec.ident.data);
+            exit(1);
         }
-        self.vars.insert(node_dec.ident.data.to_string(), self.stack_size);
+        self.insert(node_dec.ident.data.to_string(), self.stack_size);
         self.gen_expr(&node_dec.expr);
     }
 
@@ -66,21 +67,25 @@ impl Generator
 
     pub(super) fn gen_scope(&mut self, node_scope: &NodeScope)
     {
+
+        self.vars.push(HashMap::new());
+
         for stmt in node_scope.get_stmts()
         {
             self.gen_stmt(stmt);
         }
+        self.vars.pop();
     }
 
     pub(super) fn gen_assign_stmt(&mut self, node_assign: &NodeStmtAssign)
     {
-        if !self.vars.contains_key(&node_assign.get_ident().data) // variable doesn't exist
+        if !self.contains_key(&node_assign.get_ident().data) // variable doesn't exist
         {
             exit(1); // TODO: replace with error expected
         }
         self.gen_expr(node_assign.get_expr());
         instructions::pop(self, "%rax");
-        let stack_location = match self.vars.get(&node_assign.get_ident().data)
+        let stack_location = match self.get(&node_assign.get_ident().data)
         {
             Some(val) => (self.stack_size - val - 1) * 8,
             None => exit(0) // TODO: replace with error expected

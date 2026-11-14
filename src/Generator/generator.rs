@@ -26,13 +26,27 @@ pub struct Generator
     prog: NodeProg,
     output: String,
     stack_size: u32,
-    vars: HashMap<String, u32>,
+    vars: Vec<HashMap<String, u32>>,
     label_counter: u32
 }
 
 
 impl Generator
 {
+    pub fn insert(&mut self, ident: String, stack_lock : u32)
+    {
+        self.vars.last_mut().unwrap().insert(ident, stack_lock);
+    }
+    pub fn contains_key(&self, ident: &String) -> bool
+    {
+        self.vars.last().unwrap().contains_key(ident)
+    }
+
+    pub fn get(&self, ident: &String) -> Option<&u32>
+    {
+        self.vars.last().unwrap().get(ident)
+    }
+
     pub fn new(prog: NodeProg) -> Self
     {
         Self
@@ -40,7 +54,7 @@ impl Generator
             prog,
             output: String::with_capacity(4096),
             stack_size: 1,
-            vars: HashMap::new(),
+            vars: Vec::new(),
             label_counter: 0
         }
     }
@@ -75,6 +89,7 @@ impl Generator
     // functions generation
     fn gen_function(&mut self, func: &NodeFuncDecl)
     {
+        self.vars.push(HashMap::new());
 
         let func_label = &func.get_ident().data;
         instructions::insert_label(self, &func_label);
@@ -88,11 +103,11 @@ impl Generator
                 let reg = FUNC_PARAM_REGS[i];
 
 
-                if self.vars.contains_key(&var.get_ident().data) // variable declared earlier
+                if self.contains_key(&var.get_ident().data) // variable declared earlier
                 {
                     exit(1); // TODO: replace with error expected
                 }
-                self.vars.insert(var.get_ident().data.to_string(), self.stack_size);
+                self.insert(var.get_ident().data.to_string(), self.stack_size);
                 instructions::push(self, reg);
             }
         });
@@ -105,6 +120,7 @@ impl Generator
         instructions::pop(self, "%rbp");
         instructions::retq(self);
 
+        self.vars.pop();
     }
 
 

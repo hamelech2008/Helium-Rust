@@ -87,7 +87,6 @@ impl Parser
 
             if let Some(data_type) = self.parse_explicit_type()
             {
-                // let data_type = DataType::try_from(data_type_ident.data.as_str()).unwrap();
 
                 // TODO: fix func args and sym table
                 let sym = Symbol::Variable(data_type.clone());
@@ -192,11 +191,11 @@ impl Parser
         if token.data == "Array"
         {
             // if after the keyword there isn't a data type, return None
-            if self.try_consume(TokenType::Lesser).is_none() {return None;}
+            if self.try_consume(TokenType::Lesser).is_none() {error_expected!('<');}
 
             // consume the inner type and make sure the next token is '>'
             let inner_type = self.parse_explicit_type().unwrap();
-            if self.try_consume(TokenType::Greater).is_none() {return None;}
+            if self.try_consume(TokenType::Greater).is_none() {error_expected!('>');}
 
             // call it recursively
             return Some(DataType::Array(Box::new(inner_type)));
