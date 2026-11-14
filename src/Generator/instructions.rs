@@ -201,6 +201,22 @@ pub fn call(generation: &mut generator::Generator, func_name: &str)
     generation.output.push_str("\n");
 }
 
+pub fn xorq(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\txorq ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
+pub fn allocate_stack(generator: &mut generator::Generator, size: usize)
+{
+    subq(generator, &format!("${}", size * 8), "%rsp");
+    generator.stack_size += size as u32;
+}
+
+
 pub fn insert_label(generator: &mut generator::Generator, label: &str)
 {
     generator.output.push_str(label);

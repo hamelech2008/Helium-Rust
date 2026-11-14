@@ -1,6 +1,6 @@
 use std::process::exit;
 use crate::generator::{instructions, Generator, FUNC_PARAM_REGS};
-use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, NodeTermCharLiteral, NodeTermFuncCall, NodeTermIdent, NodeTermIntLiteral, Terms};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermCharLiteral, NodeTermFuncCall, NodeTermIdent, NodeTermIntLiteral, Terms};
 
 impl Generator
 {
@@ -13,7 +13,8 @@ impl Generator
             Terms::CharLiteral(node_char_literal) => self.gen_char_literal_term(node_char_literal),
             Terms::Ident(node_ident) => self.gen_ident_term(node_ident),
             Terms::Bracket(node_bracket) => self.gen_bracket_term(node_bracket),
-            Terms::NodeTermFuncCall(node_call) => self.gen_call_term(node_call)
+            Terms::NodeTermFuncCall(node_call) => self.gen_call_term(node_call),
+            Terms::Array(node_array) => self.gen_array_term(node_array),
         }
     }
 
@@ -64,6 +65,22 @@ impl Generator
 
         instructions::call(self, &node_call.get_ident().data);
         instructions::push(self, "%rax");
+    }
+
+    pub(super) fn gen_array_term(&mut self, node_array: &NodeTermArray)
+    {
+        instructions::allocate_stack(self, node_array.get_exprs().len());
+
+        instructions::push(self, "%rsp");
+
+        node_array.get_exprs().iter().enumerate().for_each(|(i, element)| {
+            self.gen_expr(element);
+            instructions::pop(self, "%rax");
+            instructions::movq(self, "%rax", &format!("{}(%rsp)", (i + 1) * 8));
+        });
+
+        instructions::pop(self, "%r10");
+        instructions::push(self, "%r10");
     }
 
 }

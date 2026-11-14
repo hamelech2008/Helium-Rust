@@ -10,7 +10,7 @@ pub enum TokenType
     And, Or,
     Ternary, Colon,
     IntLiteral, CharLiteral,
-    SemiColon, LeftBracket, RightBracket, LeftCurly, RightCurly, Comma
+    SemiColon, LeftBracket, RightBracket, LeftCurly, RightCurly, LeftSquare, RightSquare, Comma
 }
 
 // token struct containing the type and its data (for e.g: variable names, constant string value, etc...)

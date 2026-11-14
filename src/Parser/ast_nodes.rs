@@ -5,11 +5,11 @@ use crate::lexer::token::Token;
 #[derive(Clone, Debug, PartialEq)]
 pub enum DataType
 {
-    Integer, Char, Float
+    Integer, Char, Float, Array(Box<DataType>)
 }
 
 
-impl TryFrom<&str> for DataType
+impl TryFrom<&str> for DataType // used only to infer atomic types
 {
     type Error = String;
 
@@ -33,7 +33,15 @@ impl From<DataType> for String
         {
             DataType::Integer => String::from("Integer"),
             DataType::Float => String::from("Float"),
-            DataType::Char => String::from("Char")
+            DataType::Char => String::from("Char"),
+            DataType::Array(array) => {
+                let mut str = String::new();
+
+                str.push_str("Array<");
+                str.push_str(&String::from(*array));
+                str.push_str(">");
+                str
+            },
         }
     }
 }
@@ -43,7 +51,7 @@ pub mod term
 {
     use crate::lexer::token::Token;
     use crate::parser::ast_nodes::DataType;
-    use crate::parser::ast_nodes::expr::NodeExpr;
+    use crate::parser::ast_nodes::expr::{Exprs, NodeExpr};
 
     #[derive(Debug, Clone)]
 
@@ -128,8 +136,42 @@ pub mod term
         }
     }
 
+
     #[derive(Debug, Clone)]
-    pub enum Terms { Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral), CharLiteral(NodeTermCharLiteral), Bracket(NodeTermBracket), NodeTermFuncCall(NodeTermFuncCall) }
+    pub struct NodeTermArray
+    {
+        exprs: Vec<NodeExpr>,
+        data_type: DataType
+    }
+    impl NodeTermArray
+    {
+        pub fn new(exprs: Vec<NodeExpr>, data_type: DataType) -> Self
+        {
+            Self
+            {
+                exprs,
+                data_type
+            }
+        }
+
+        pub fn get_exprs(&self) -> &Vec<NodeExpr>
+        {
+            &self.exprs
+        }
+
+        pub fn get_data_type(&self) -> &DataType
+        {
+            &self.data_type
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum Terms
+    {
+        Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral),
+        CharLiteral(NodeTermCharLiteral), Bracket(NodeTermBracket), NodeTermFuncCall(NodeTermFuncCall),
+        Array(NodeTermArray)
+    }
 
     #[derive(Debug, Clone)]
 

@@ -1,5 +1,5 @@
 use regex::{Match, Regex};
-use crate::lexer::token::{Token, TokenType};
+use crate::lexer::token::{TokenType};
 
 
 
@@ -86,6 +86,8 @@ impl Lexer
         | (?P<right_bracket>\))
         | (?P<left_curly>\{)
         | (?P<right_curly>})
+        | (?P<left_square>\[)
+        | (?P<right_square>])
         "
         ).unwrap();
 
@@ -206,6 +208,14 @@ impl Lexer
             else if let Some(m) = caps.name("right_curly")
             {
                 self.add_token(TokenType::RightCurly, m);
+            }
+            else if let Some(m) = caps.name("left_square")
+            {
+                self.add_token(TokenType::LeftSquare, m);
+            }
+            else if let Some(m) = caps.name("right_square")
+            {
+                self.add_token(TokenType::RightSquare, m);
             }
             else if let Some(m) = caps.name("colon")
             {

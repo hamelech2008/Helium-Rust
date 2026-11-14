@@ -76,7 +76,7 @@ impl Parser
 
 
     // function parsing
-    fn parse_function_param(&mut self) -> Option<FuncDecVar>
+    fn parse_function_param(&mut self) -> Option<FuncDecVar> // parse the params of a function when declared
     {
         // consume the 'dec' token
         if self.try_consume(TokenType::Dec).is_none() {error_expected!("dec");}
@@ -85,9 +85,9 @@ impl Parser
             // consume the ':' token
             if self.try_consume(TokenType::Colon).is_none() {error_expected!(":");}
 
-            if let Some(data_type_ident) = self.try_consume(TokenType::Ident)
+            if let Some(data_type) = self.parse_explicit_type()
             {
-                let data_type = DataType::try_from(data_type_ident.data.as_str()).unwrap();
+                // let data_type = DataType::try_from(data_type_ident.data.as_str()).unwrap();
 
                 // TODO: fix func args and sym table
                 let sym = Symbol::Variable(data_type.clone());
@@ -101,7 +101,7 @@ impl Parser
         }
         None
     }
-    fn parse_function(&mut self) -> Option<NodeFuncDecl>
+    fn parse_function(&mut self) -> Option<NodeFuncDecl> // parse a function declaration
     {
         // consume the 'function' token
         if self.try_consume(TokenType::Function).is_none() {error_expected!("function");}
@@ -142,10 +142,9 @@ impl Parser
             {
                 if self.try_consume(TokenType::Subtraction).is_none() {error_expected!("-");}
                 if self.try_consume(TokenType::Greater).is_none() {error_expected!(">");}
-                if let Some(return_data_type) = self.try_consume(TokenType::Ident)
+                if let Some(return_data_type) = self.parse_explicit_type()
                 {
-                    let data_type = DataType::try_from(return_data_type.data.as_str()).unwrap();
-                    let symbol = Symbol::Function {return_type: data_type};
+                    let symbol = Symbol::Function {return_type: return_data_type};
                     self.symbol_table.insert(ident.clone().data, symbol);
                 }
             }
@@ -159,7 +158,7 @@ impl Parser
         None
     }
 
-    fn get_func_args(&mut self) -> Vec<NodeExpr>
+    fn get_func_args(&mut self) -> Vec<NodeExpr> // function to get a list of the arguments that are passed when a function is called
     {
         let mut func_args = Vec::new();
 
@@ -180,6 +179,33 @@ impl Parser
         }
         func_args
     }
+
+    fn parse_explicit_type(&mut self) -> Option<DataType>
+    {
+        // consume the next token
+        let token = self.consume().unwrap();
+
+        // if it's not an ident, return None (invalid type)
+        if token.token_type != TokenType::Ident {return None;}
+
+        // check for the 'Array' keyword
+        if token.data == "Array"
+        {
+            // if after the keyword there isn't a data type, return None
+            if self.try_consume(TokenType::Lesser).is_none() {return None;}
+
+            // consume the inner type and make sure the next token is '>'
+            let inner_type = self.parse_explicit_type().unwrap();
+            if self.try_consume(TokenType::Greater).is_none() {return None;}
+
+            // call it recursively
+            return Some(DataType::Array(Box::new(inner_type)));
+        }
+
+        // else return the basic type
+        Some(DataType::try_from(token.data.as_str()).unwrap())
+    }
+
 
 
 

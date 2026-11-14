@@ -1,9 +1,9 @@
 use std::process::exit;
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::ast_nodes::term::{NodeTerm, NodeTermBracket, NodeTermFuncCall, Terms};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermFuncCall, Terms};
 use crate::parser::{ast_nodes, Parser};
 use crate::parser::ast_nodes::expr::NodeExpr;
-use crate::check_next_tokens;
+use crate::{check_next_tokens, type_error};
 use crate::error_expected;
 use crate::parser::ast_nodes::DataType;
 
@@ -12,6 +12,12 @@ impl Parser
     // term parsing
     pub(super) fn parse_term(&mut self) -> Option<NodeTerm>
     {
+        // check for an array term
+        if self.try_peek(TokenType::LeftSquare)
+        {
+            return self.parse_array_term();
+        }
+
         // check for a function call term
         if check_next_tokens!(self, TokenType::Ident, TokenType::LeftBracket)
         {
@@ -43,6 +49,46 @@ impl Parser
         }
 
         None
+    }
+
+    fn parse_array_term(&mut self) -> Option<NodeTerm>
+    {
+        let mut elements = Vec::new();
+        // consume the opening '[' token and expecting a type
+        if self.try_consume(TokenType::LeftSquare).is_none() {error_expected!('[');}
+        if self.try_consume(TokenType::RightSquare).is_some() {type_error!("type");}
+
+        loop
+        {
+            // loop through all the elements and pushing them
+            if let Some(element) = self.parse_expr(0)
+            {
+                elements.push(element);
+                // continue while separated by a ','
+                if self.try_consume(TokenType::Comma).is_some() {continue;}
+
+                // break on the ']' token
+                if self.try_consume(TokenType::RightSquare).is_some(){break;}
+            }
+            return None;
+        }
+        // get the first element type and make sure all the elements are from the same type
+        let element_type = elements.first().unwrap().get_data_type().clone();
+        for element in &elements
+        {
+            if element.get_data_type() != element_type
+            {
+                type_error!("test"); // TODO: replace with proper type
+            }
+        }
+
+        // create the data type of type array<element_type>
+        let data_type = DataType::Array(Box::new(element_type));
+
+        let node_term_arr = NodeTermArray::new(elements, data_type.clone());
+        let node_term = NodeTerm::new(Terms::Array(node_term_arr), data_type);
+
+        Some(node_term)
     }
 
     fn parse_int_literal_term(&self, literal: &Token) -> Option<NodeTerm>
