@@ -1,6 +1,6 @@
 use std::process::exit;
 use crate::generator::{instructions, Generator, FUNC_PARAM_REGS};
-use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermCharLiteral, NodeTermFuncCall, NodeTermIdent, NodeTermIntLiteral, Terms};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermCharLiteral, NodeTermFuncCall, NodeTermIdent, NodeTermIntLiteral, NodeTermUninitializedArray, Terms};
 
 impl Generator
 {
@@ -15,6 +15,7 @@ impl Generator
             Terms::Bracket(node_bracket) => self.gen_bracket_term(node_bracket),
             Terms::NodeTermFuncCall(node_call) => self.gen_call_term(node_call),
             Terms::Array(node_array) => self.gen_array_term(node_array),
+            Terms::UninitializedArray(node_uninitialized_array) => self.gen_initialize_array_term(node_uninitialized_array)
         }
     }
 
@@ -74,7 +75,7 @@ impl Generator
             self.gen_expr(element);
         }
 
-        instructions::movq_immediate(self, &node_array.get_elements().len().to_string(), "%rdi");
+        instructions::movq_immediate(self, &(node_array.get_elements().len() * 8).to_string(), "%rdi");
         instructions::call(self, "malloc"); // value returned in rax
 
         node_array.get_elements().iter().enumerate().for_each(|(i, element)|
@@ -85,6 +86,15 @@ impl Generator
 
         instructions::push(self, "%rax");
         // TODO: use a heap allocator to allocate the array
+    }
+
+
+    pub(super) fn gen_initialize_array_term(&mut self, node_uninitialized_array: &NodeTermUninitializedArray)
+    {
+        self.gen_expr(node_uninitialized_array.get_size());
+        instructions::pop(self, "%rdi");
+        instructions::call(self, "malloc");
+        instructions::push(self, "%rax");
     }
 
 }

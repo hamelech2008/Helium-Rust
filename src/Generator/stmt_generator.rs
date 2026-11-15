@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::process::exit;
 use crate::generator::{instructions, Generator, FUNC_PARAM_REGS};
+use crate::parser::ast_nodes::expr::{Exprs, NodeArrayAccess, NodeExpr};
 use crate::parser::ast_nodes::NodeScope;
-use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, NodeStmtWhileLoop, Stmts};
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtComplexAssign, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, NodeStmtWhileLoop, Stmts};
 
 impl Generator
 {
@@ -17,7 +18,8 @@ impl Generator
             Stmts::NodeStmtForLoop(node_for_loop) => self.gen_for_loop_stmt(node_for_loop),
             Stmts::NodeStmtWhileLoop(node_while_loop) => self.gen_while_loop_stmt(node_while_loop),
             Stmts::NodeStmtReturn(node_return) => self.gen_return_stmt(node_return),
-            Stmts::NodeStmtFuncCall(node_call) => self.gen_func_call_stmt(node_call)
+            Stmts::NodeStmtFuncCall(node_call) => self.gen_func_call_stmt(node_call),
+            Stmts::NodeStmtComplexAssign(node_assign) => self.gen_complex_assign_stmt(node_assign)
         }
     }
 
@@ -171,6 +173,43 @@ impl Generator
         });
 
         instructions::call(self, &node_call_func.get_ident().data);
+    }
+
+    pub(super) fn gen_complex_assign_stmt(&mut self, node_complex_assign: &NodeStmtComplexAssign)
+    {
+        self.gen_expr_addr(node_complex_assign.get_assigned_expr());
+        self.gen_expr(node_complex_assign.get_expr());
+
+        instructions::pop(self, "%rax"); // the value to assign
+        instructions::pop(self, "%rbx"); // the value to assign to
+
+        instructions::movq(self,"%rax", "(%rbx)");
+    }
+
+
+
+
+
+
+
+    pub fn gen_expr_addr(&mut self, expr: &NodeExpr)
+    {
+        match &expr.get_var()
+        {
+            Exprs::ArrayAccess(node_array_access) => self.gen_array_index_addr(node_array_access),
+            _ => unreachable!("Expression is not assignable"),
+        }
+    }
+
+    pub fn gen_array_index_addr(&mut self, node_array_access: &NodeArrayAccess)
+    {
+        self.gen_expr(&*node_array_access.array);
+        self.gen_expr(&*node_array_access.index);
+        instructions::pop(self, "%rax"); // index
+        instructions::pop(self, "%rbx"); // array
+
+        instructions::leaq(self, "(%rbx, %rax, 8)", "%rax"); // calculate offset fitting for a byte rbx[rax * 8]
+        instructions::push(self, "%rax");
     }
 
 }

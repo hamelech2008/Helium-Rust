@@ -1,11 +1,12 @@
 use std::process::exit;
 use crate::lexer::token::TokenType;
 use crate::parser::ast_nodes::stmt;
-use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtElse, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, Stmts};
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtComplexAssign, NodeStmtElse, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, Stmts};
 use crate::parser::ast_nodes::stmt::Stmts::{NodeStmtForLoop, NodeStmtWhileLoop};
 use crate::parser::Parser;
 use crate::check_next_tokens;
 use crate::error_expected;
+use crate::parser::ast_nodes::expr::{ NodeExpr};
 use crate::parser::symbol_table::Symbol;
 
 impl Parser
@@ -13,46 +14,50 @@ impl Parser
     // statement parsing
     pub(super) fn parse_stmt(&mut self, expect_semi_colon: bool) -> Option<NodeStmt>
     {
-        // check for a declaration statement
-        if check_next_tokens!(self, TokenType::Dec, TokenType::Ident, TokenType::Equals)
+        // declaration and basic assignment
+        if check_next_tokens!(self, TokenType::Dec, TokenType::Ident, TokenType::Equals) // check for a declaration statement
         {
             return self.parse_dec_stmt(expect_semi_colon);
         }
-
-        // check for an if statement
-        if check_next_tokens!(self, TokenType::If, TokenType::LeftBracket)
-        {
-            return self.parse_if_stmt();
-        }
-
-        // check for an assignment statement
-        if check_next_tokens!(self, TokenType::Ident, TokenType::Equals)
+        if check_next_tokens!(self, TokenType::Ident, TokenType::Equals) // check for an assignment statement
         {
             return self.parse_assignment_stmt(expect_semi_colon);
         }
 
-        // check for a for loop statement
-        if check_next_tokens!(self, TokenType::For, TokenType::LeftBracket)
+
+        // control flow
+        if check_next_tokens!(self, TokenType::If, TokenType::LeftBracket) // check for an if statement
+        {
+            return self.parse_if_stmt();
+        }
+        if check_next_tokens!(self, TokenType::For, TokenType::LeftBracket) // check for a for loop statement
         {
             return self.parse_for_loop_stmt();
         }
-
-        // check for a while loop statement
-        if check_next_tokens!(self, TokenType::While, TokenType::LeftBracket)
+        if check_next_tokens!(self, TokenType::While, TokenType::LeftBracket) // check for a while loop statement
         {
             return self.parse_while_loop_stmt();
         }
 
-        // check for a return statement
-        if self.try_peek(TokenType::Return)
+
+
+        // function related
+        if check_next_tokens!(self, TokenType::Ident, TokenType::LeftBracket) // check for a function call statement
+        {
+            return self.parse_func_call_stmt();
+        }
+        if self.try_peek(TokenType::Return) // check for a return statement
         {
             return self.parse_return_stmt();
         }
 
-        // check for a function call statement
-        if check_next_tokens!(self, TokenType::Ident, TokenType::LeftBracket)
+
+
+        // check for a complex assignment statement
+        if let Some(assigned_expr) = self.parse_expr(0) && self.try_peek(TokenType::Equals)
         {
-            return self.parse_func_call_stmt();
+            return self.parse_complex_assignment_stmt(assigned_expr, expect_semi_colon);
+
         }
         None
     }
@@ -162,6 +167,29 @@ impl Parser
 
             let stmt = NodeStmt::new(Stmts::NodeStmtAssign(node_assign));
             return Some(stmt);
+        }
+        None
+    }
+
+    fn parse_complex_assignment_stmt(&mut self, assigned_expr: NodeExpr, expect_semi_colon: bool) -> Option<NodeStmt>
+    {
+        // consume the '=' token
+        if self.try_consume(TokenType::Equals).is_none() {error_expected!('=');}
+
+        if let Some(expr) = self.parse_expr(0)
+        {
+
+            let node_assign = NodeStmtComplexAssign::new(assigned_expr, expr);
+
+            if expect_semi_colon
+            {
+                // consume the ';' token
+                if self.try_consume(TokenType::SemiColon).is_none() {error_expected!(";");}
+            }
+
+            let stmt = NodeStmt::new(Stmts::NodeStmtComplexAssign(node_assign));
+            return Some(stmt);
+
         }
         None
     }

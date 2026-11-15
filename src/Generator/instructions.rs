@@ -210,6 +210,14 @@ pub fn xorq(generator: &mut generator::Generator, src: &str, dst: &str)
     generator.output.push_str("\n");
 }
 
+pub fn leaq(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tleaq ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
 
 pub fn insert_label(generator: &mut generator::Generator, label: &str)
 {

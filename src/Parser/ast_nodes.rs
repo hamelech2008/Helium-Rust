@@ -165,12 +165,42 @@ pub mod term
         }
     }
 
+
+    #[derive(Debug, Clone)]
+    pub struct NodeTermUninitializedArray
+    {
+        size: Box<NodeExpr>,
+        data_type: DataType
+    }
+
+    impl NodeTermUninitializedArray
+    {
+        pub fn new(size: NodeExpr, data_type: DataType) -> Self
+        {
+            Self
+            {
+                size: Box::new(size),
+                data_type
+            }
+        }
+
+        pub fn get_size(&self) -> &NodeExpr
+        {
+            &self.size
+        }
+
+        pub fn get_type(&self) -> &DataType
+        {
+            &self.data_type
+        }
+    }
+
     #[derive(Debug, Clone)]
     pub enum Terms
     {
         Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral),
         CharLiteral(NodeTermCharLiteral), Bracket(NodeTermBracket), NodeTermFuncCall(NodeTermFuncCall),
-        Array(NodeTermArray)
+        Array(NodeTermArray), UninitializedArray(NodeTermUninitializedArray)
     }
 
     #[derive(Debug, Clone)]
@@ -615,13 +645,43 @@ pub mod stmt
         }
     }
 
+
+    #[derive(Debug, Clone)]
+    pub struct NodeStmtComplexAssign
+    {
+        assigned_expr: NodeExpr,
+        expr: NodeExpr
+    }
+
+    impl NodeStmtComplexAssign
+    {
+        pub fn new(assigned_expr: NodeExpr, expr: NodeExpr) -> Self
+        {
+            Self
+            {
+                assigned_expr,
+                expr
+            }
+        }
+
+        pub fn get_assigned_expr(&self) -> &NodeExpr
+        {
+            &self.assigned_expr
+        }
+
+        pub fn get_expr(&self) -> &NodeExpr
+        {
+            &self.expr
+        }
+    }
     #[derive(Debug, Clone)]
     pub enum Stmts
     {
         NodeStmtDec(NodeStmtDec), NodeStmtIf(NodeStmtIf),
         NodeStmtAssign(NodeStmtAssign),
         NodeStmtForLoop(NodeStmtForLoop), NodeStmtWhileLoop(NodeStmtWhileLoop),
-        NodeStmtReturn(NodeStmtReturn), NodeStmtFuncCall(NodeStmtFuncCall)
+        NodeStmtReturn(NodeStmtReturn), NodeStmtFuncCall(NodeStmtFuncCall),
+        NodeStmtComplexAssign(NodeStmtComplexAssign)
     }
     #[derive(Debug, Clone)]
     pub struct NodeStmt

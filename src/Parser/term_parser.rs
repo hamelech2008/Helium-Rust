@@ -1,6 +1,6 @@
 use std::process::exit;
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermFuncCall, Terms};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermFuncCall, NodeTermUninitializedArray, Terms};
 use crate::parser::{ast_nodes, Parser};
 use crate::parser::ast_nodes::expr::NodeExpr;
 use crate::{check_next_tokens, type_error};
@@ -15,6 +15,29 @@ impl Parser
         // check for an array term
         if self.try_peek(TokenType::LeftSquare)
         {
+            if self.try_peek_offset(TokenType::Ident, 1)
+            {
+
+                // consume the '[' token
+                if self.try_consume(TokenType::LeftSquare).is_none() {error_expected!('[');}
+
+                if let Some(element_data_type) =self.parse_explicit_type()
+                {
+                    if self.try_consume(TokenType::Comma).is_none() {error_expected!(',');}
+
+                    if let Some(size) = self.parse_expr(0)
+                    {
+                        // consume the ']' token
+                        if self.try_consume(TokenType::RightSquare).is_none() {error_expected!(']');}
+
+                        let data_type = DataType::Array(Box::new(element_data_type));
+
+                        let node_term_arr = NodeTermUninitializedArray::new(size, data_type.clone());
+                        let node_term = NodeTerm::new(Terms::UninitializedArray(node_term_arr), data_type);
+                        return Some(node_term);
+                    }
+                }
+            }
             return self.parse_array_term();
         }
 
