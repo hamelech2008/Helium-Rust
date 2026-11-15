@@ -69,6 +69,21 @@ impl Generator
 
     pub(super) fn gen_array_term(&mut self, node_array: &NodeTermArray)
     {
+        for element in node_array.get_elements().iter().rev()
+        {
+            self.gen_expr(element);
+        }
+
+        instructions::movq_immediate(self, &node_array.get_elements().len().to_string(), "%rdi");
+        instructions::call(self, "malloc"); // value returned in rax
+
+        node_array.get_elements().iter().enumerate().for_each(|(i, element)|
+            {
+                instructions::pop(self, "%rbx");
+                instructions::movq(self, "%rbx", &format!("{}(%rax)", i * 8));
+            });
+
+        instructions::push(self, "%rax");
         // TODO: use a heap allocator to allocate the array
     }
 

@@ -67,13 +67,19 @@ impl Generator
 
     pub(super) fn gen_scope(&mut self, node_scope: &NodeScope)
     {
-
+        let scope_stack_size = self.stack_size; // save the current stack size
         self.vars.push(HashMap::new());
 
         for stmt in node_scope.get_stmts()
         {
             self.gen_stmt(stmt);
         }
+
+        let vars_declared = (self.stack_size as i32 - scope_stack_size as i32).abs();
+
+        // use the size of the stack before the scope and account for the variables declared in that scope
+        instructions::addq(self, &format!("${}", vars_declared * 8), "%rsp");
+        self.stack_size = scope_stack_size;
         self.vars.pop();
     }
 
@@ -81,6 +87,7 @@ impl Generator
     {
         if !self.contains_key(&node_assign.get_ident().data) // variable doesn't exist
         {
+            eprintln!("Unknown variable {}\n", node_assign.get_ident().data);
             exit(1); // TODO: replace with error expected
         }
         self.gen_expr(node_assign.get_expr());
@@ -113,7 +120,6 @@ impl Generator
         self.gen_stmt(node_for_loop.get_stmt());
         instructions::jmp(self, &start_label);
         instructions::insert_label(self, &end_label);
-
     }
 
 

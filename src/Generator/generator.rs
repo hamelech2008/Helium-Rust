@@ -35,16 +35,19 @@ impl Generator
 {
     pub fn insert(&mut self, ident: String, stack_lock : u32)
     {
+        // inserting only on the current scope
         self.vars.last_mut().unwrap().insert(ident, stack_lock);
     }
     pub fn contains_key(&self, ident: &String) -> bool
     {
-        self.vars.last().unwrap().contains_key(ident)
+        // checking for variables from all parent scopes
+        self.vars.iter().rev().any(|scope| scope.contains_key(ident))
     }
 
     pub fn get(&self, ident: &String) -> Option<&u32>
     {
-        self.vars.last().unwrap().get(ident)
+        // getting the variable stack offset from all the parent scopes
+        self.vars.iter().rev().find_map(|scope| scope.get(ident))
     }
 
     pub fn new(prog: NodeProg) -> Self
@@ -89,6 +92,7 @@ impl Generator
     // functions generation
     fn gen_function(&mut self, func: &NodeFuncDecl)
     {
+        let initial_stack_size = self.stack_size; // save the stack size before the function
         self.vars.push(HashMap::new());
 
         let func_label = &func.get_ident().data;
@@ -105,6 +109,7 @@ impl Generator
 
                 if self.contains_key(&var.get_ident().data) // variable declared earlier
                 {
+                    eprintln!("Variable '{}' has already been declared.", var.get_ident().data);
                     exit(1); // TODO: replace with error expected
                 }
                 self.insert(var.get_ident().data.to_string(), self.stack_size);
@@ -120,6 +125,7 @@ impl Generator
         instructions::pop(self, "%rbp");
         instructions::retq(self);
 
+        self.stack_size = initial_stack_size; // use the saved stack size
         self.vars.pop();
     }
 

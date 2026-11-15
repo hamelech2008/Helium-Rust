@@ -154,7 +154,7 @@ pub mod term
             }
         }
 
-        pub fn get_exprs(&self) -> &Vec<NodeExpr>
+        pub fn get_elements(&self) -> &Vec<NodeExpr>
         {
             &self.exprs
         }
