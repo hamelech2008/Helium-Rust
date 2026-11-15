@@ -2,7 +2,7 @@
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TokenType
 {
-    Class, New,
+    Class, New, Dot,
     For, While, If, Else, Function, Return,
     Dec,
     Ident,

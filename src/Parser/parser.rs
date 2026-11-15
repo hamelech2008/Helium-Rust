@@ -12,7 +12,7 @@ use crate::lexer::{binary_prec};
 use crate::parser::ast_nodes::{DataType, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::ast_nodes::class::NodeClassDecl;
-use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeArrayAccess, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr, Operator};
+use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeArrayAccess, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeMemberAccess, NodeTerneryExpr, Operator};
 use crate::parser::ast_nodes::functions::{FuncDecVar, NodeFuncDecl};
 use crate::parser::symbol_table::{Symbol, SymbolTable};
 
@@ -345,6 +345,7 @@ impl Parser
                 Some(token) => token,
                 None => return Some(expr),
             };
+
             // match the token
             match token.token_type
             {
@@ -375,6 +376,24 @@ impl Parser
                             expr = NodeExpr::new(Exprs::ArrayAccess(node_access), element_type);
                         }
                     },
+
+                TokenType::Dot =>
+                    {
+                        self.consume(); // consume the '.' token
+                        if self.try_peek(TokenType::Ident)
+                        {
+                            if let Some(member) = self.try_consume(TokenType::Ident)
+                            {
+                                let node_obj_access = NodeMemberAccess::new(expr, member);
+
+                                
+                                let member_type = DataType::Integer; // TODO: fix to dynamically get the member's data type
+
+                                expr = NodeExpr::new(Exprs::NodeMemberAccess(node_obj_access), member_type);
+                            }
+                            else {error_expected!("member after '.'");}
+                        }
+                    }
                 _ => return Some(expr)
             }
         }

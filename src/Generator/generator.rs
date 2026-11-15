@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::process::exit;
 use crate::parser::ast_nodes::class::NodeClassDecl;
-use crate::parser::ast_nodes::NodeProg;
-use crate::parser::ast_nodes::expr::{Exprs, NodeArrayAccess, NodeExpr, NodeTerneryExpr};
+use crate::parser::ast_nodes::{DataType, NodeProg};
+use crate::parser::ast_nodes::expr::{Exprs, NodeArrayAccess, NodeExpr, NodeMemberAccess, NodeTerneryExpr};
 use crate::parser::ast_nodes::functions::NodeFuncDecl;
 mod instructions;
 mod stmt_generator;
@@ -146,6 +146,7 @@ impl Generator
             Exprs::LogicExpr(node_logic_expr) => self.gen_logic_expr(node_logic_expr),
             Exprs::TerneryExpr(node_ternery_expr) => self.gen_ternery_expr(node_ternery_expr),
             Exprs::ArrayAccess(node_array_access) => self.gen_array_index_expr(node_array_access),
+            Exprs::NodeMemberAccess(node_member_access) => self.get_member_access(node_member_access)
         }
     }
 
@@ -193,6 +194,39 @@ impl Generator
         instructions::pop(self, "%rbx"); // array
         instructions::movq(self, "(%rbx, %rax, 8)", "%rax"); // calculate offset fitting for a byte rbx[rax * 8]
         instructions::push(self, "%rax");
+    }
+
+
+    fn get_member_access(&mut self, member_access: &NodeMemberAccess)
+    {
+
+        let class = match member_access.get_object().get_data_type()
+        {
+            DataType::Custom(id, name) => name,
+            _ => {
+                exit(1);
+            }
+        };
+
+        let class_declaration = self.class_table.get(&class);
+
+        if class_declaration.is_none()
+        {
+            eprintln!("Unknown type {}.", class);
+        }
+        let class_declaration = class_declaration.unwrap();
+
+
+        let field = class_declaration.get_fields().get(&member_access.get_member().data);
+
+        if field.is_none() {exit(1);}
+
+        let offset = field.unwrap().get_offset() * 8;
+        self.gen_expr(member_access.get_object());
+        instructions::pop(self, "%rax");
+
+        instructions::movq(self, &format!("{}(%rax)", offset), "%rbx");
+        instructions::push(self, "%rbx");
     }
 
     // helper functions

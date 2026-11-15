@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::process::exit;
 use crate::generator::{instructions, Generator, FUNC_PARAM_REGS};
-use crate::parser::ast_nodes::expr::{Exprs, NodeArrayAccess, NodeExpr};
+use crate::parser::ast_nodes::expr::{Exprs, NodeArrayAccess, NodeExpr, NodeMemberAccess};
 use crate::parser::ast_nodes::NodeScope;
 use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtComplexAssign, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, NodeStmtWhileLoop, Stmts};
 
@@ -197,6 +197,7 @@ impl Generator
         match &expr.get_var()
         {
             Exprs::ArrayAccess(node_array_access) => self.gen_array_index_addr(node_array_access),
+            Exprs::NodeMemberAccess(node_member_access) => self.gen_member_access_addr(node_member_access),
             _ => unreachable!("Expression is not assignable"),
         }
     }
@@ -210,6 +211,11 @@ impl Generator
 
         instructions::leaq(self, "(%rbx, %rax, 8)", "%rax"); // calculate offset fitting for a byte rbx[rax * 8]
         instructions::push(self, "%rax");
+    }
+
+    pub fn gen_member_access_addr(&mut self, node_member_access: &NodeMemberAccess)
+    {
+
     }
 
 }

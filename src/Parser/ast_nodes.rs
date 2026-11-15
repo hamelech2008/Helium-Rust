@@ -260,8 +260,8 @@ pub mod term
 // module for expressions, terms, binary and logic expressions
 pub mod expr
 {
+    use crate::lexer::token::Token;
     use crate::parser::ast_nodes::{term, DataType};
-
 
     #[derive(Clone, Debug)]
     pub enum BinOp { Addition, Subtraction, Division, Multiplication, Lesser, Greater, EqualsTo, GreaterOrEqual, LesserOrEqual, NotEqual }
@@ -407,13 +407,43 @@ pub mod expr
         }
     }
 
+
+    #[derive(Debug, Clone)]
+    pub struct NodeMemberAccess
+    {
+        object: Box<NodeExpr>,
+        member: Token
+    }
+
+    impl NodeMemberAccess
+    {
+        pub fn new(object: NodeExpr, member: Token) -> Self
+        {
+            Self
+            {
+                object: Box::new(object),
+                member
+            }
+        }
+
+        pub fn get_object(&self) -> &NodeExpr
+        {
+            &self.object
+        }
+
+        pub fn get_member(&self) -> &Token
+        {
+            &self.member
+        }
+    }
+
     #[derive(Debug, Clone)]
 
     pub enum Exprs
     {
         Term(term::NodeTerm), BinExpr(NodeBinExpr),
         LogicExpr(NodeLogicExpr), TerneryExpr(NodeTerneryExpr),
-        ArrayAccess(NodeArrayAccess)
+        ArrayAccess(NodeArrayAccess), NodeMemberAccess(NodeMemberAccess)
     }
     #[derive(Debug, Clone)]
 
@@ -827,6 +857,7 @@ pub mod functions
 
 pub mod class
 {
+    use std::collections::HashMap;
     use crate::lexer::token::Token;
     use crate::parser::ast_nodes::{DataType};
     use crate::parser::ast_nodes::functions::NodeFuncDecl;
@@ -836,7 +867,7 @@ pub mod class
     {
         ident: Token,
         data_type: DataType,
-        offset: u32
+        pub offset: u32
     }
     impl ClassDecVar
     {
@@ -859,18 +890,23 @@ pub mod class
         {
             &self.ident
         }
+
+        pub fn get_offset(&self) -> u32
+        {
+            self.offset
+        }
     }
     #[derive(Clone, Debug)]
     pub struct NodeClassDecl
     {
         methods: Vec<NodeFuncDecl>,
-        fields: Vec<ClassDecVar>,
+        pub fields: HashMap<String, ClassDecVar>,
         size: u32
     }
 
     impl NodeClassDecl
     {
-        pub fn new(methods: Vec<NodeFuncDecl>, fields: Vec<ClassDecVar>, size: u32) -> Self
+        pub fn new(methods: Vec<NodeFuncDecl>, fields: HashMap<String, ClassDecVar>, size: u32) -> Self
         {
             Self
             {
@@ -882,6 +918,16 @@ pub mod class
         pub fn get_size(&self) -> &u32
         {
             &self.size
+        }
+
+        pub fn get_fields(&self) -> &HashMap<String, ClassDecVar>
+        {
+            &self.fields
+        }
+
+        pub fn get_methods(&self) -> &Vec<NodeFuncDecl>
+        {
+            &self.methods
         }
 
     }

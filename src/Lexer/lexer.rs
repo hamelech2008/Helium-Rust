@@ -66,6 +66,7 @@ impl Lexer
         | (?P<new>\bnew\b)
         | (?P<ident>[a-zA-Z_][a-zA-Z0-9_]*)
         | (?P<and>&&)
+        | (?P<dot>\.)
         | (?P<or>\|\|)
         | (?P<not_equal>!=)
         | (?P<equals_to>==)
@@ -103,6 +104,10 @@ impl Lexer
             else if let Some(m) = caps.name("new")
             {
                 self.add_token(TokenType::New, m);
+            }
+            else if let Some(m) = caps.name("dot")
+            {
+                self.add_token(TokenType::Dot, m);
             }
             else if let Some(m) = caps.name("dec")
             {

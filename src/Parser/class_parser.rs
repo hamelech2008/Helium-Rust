@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::process::exit;
 use crate::lexer::token::TokenType;
 use crate::parser::ast_nodes::class::{ClassDecVar, NodeClassDecl};
@@ -17,7 +18,7 @@ impl Parser
             // consume the '{' token, note: class does not contain a scope
             if self.try_consume(TokenType::LeftCurly).is_none() {return None;}
 
-            let mut fields = Vec::new();
+            let mut fields = HashMap::new();
             let mut methods = Vec::new();
             let mut offset = 0;
             loop
@@ -27,7 +28,8 @@ impl Parser
                     if let Some(mut field) = self.parse_field()
                     {
                         field.set_offset(offset);
-                        fields.push(field);
+                        let ident = field.get_ident().clone().data;
+                        fields.insert(ident, field);
                         offset += 1;
                     }
                 }
@@ -46,7 +48,7 @@ impl Parser
 
 
             let node_class = NodeClassDecl::new(methods, fields, offset);
-            
+
             self.class_table.insert(ident.data, node_class.clone());
             return Some(node_class);
         }
