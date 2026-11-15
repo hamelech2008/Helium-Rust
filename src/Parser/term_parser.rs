@@ -1,6 +1,6 @@
 use std::process::exit;
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermFuncCall, NodeTermUninitializedArray, Terms};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermFuncCall, NodeTermNewObj, NodeTermUninitializedArray, Terms};
 use crate::parser::{ast_nodes, Parser};
 use crate::parser::ast_nodes::expr::NodeExpr;
 use crate::{check_next_tokens, type_error};
@@ -12,6 +12,11 @@ impl Parser
     // term parsing
     pub(super) fn parse_term(&mut self) -> Option<NodeTerm>
     {
+        if check_next_tokens!(self, TokenType::New, TokenType::Ident)
+        {
+            return self.parse_object_creation_term();
+        }
+
         // check for an array term
         if self.try_peek(TokenType::LeftSquare)
         {
@@ -71,6 +76,21 @@ impl Parser
             return self.parse_bracket_term(expr);
         }
 
+        None
+    }
+
+    fn parse_object_creation_term(&mut self) -> Option<NodeTerm>
+    {
+        // consume the opening 'new' token and expecting a type
+        if self.try_consume(TokenType::New).is_none() {error_expected!("new");}
+
+        if let Some(ident) = self.try_consume(TokenType::Ident)
+        {
+            let data_type = DataType::Custom(0, ident.clone().data);
+            let obj_creation = NodeTermNewObj::new(ident, data_type.clone());
+            let term = NodeTerm::new(Terms::NodeTermNewObj(obj_creation), data_type);
+            return Some(term);
+        }
         None
     }
 

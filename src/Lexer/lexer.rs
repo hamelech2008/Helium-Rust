@@ -62,6 +62,8 @@ impl Lexer
         | (?P<else>\belse\b)
         | (?P<function>\bfunction\b)
         | (?P<return>\breturn\b)
+        | (?P<class>\bclass\b)
+        | (?P<new>\bnew\b)
         | (?P<ident>[a-zA-Z_][a-zA-Z0-9_]*)
         | (?P<and>&&)
         | (?P<or>\|\|)
@@ -92,8 +94,17 @@ impl Lexer
         ).unwrap();
 
         // loop on the source code to add then tokens to the vector
-        for caps in tokens_re.captures_iter(source_code) {
-            if let Some(m) = caps.name("dec")
+        for caps in tokens_re.captures_iter(source_code)
+        {
+            if let Some(m) = caps.name("class")
+            {
+                self.add_token(TokenType::Class, m);
+            }
+            else if let Some(m) = caps.name("new")
+            {
+                self.add_token(TokenType::New, m);
+            }
+            else if let Some(m) = caps.name("dec")
             {
                 self.add_token(TokenType::Dec, m);
             }

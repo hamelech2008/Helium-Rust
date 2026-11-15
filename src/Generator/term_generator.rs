@@ -1,6 +1,6 @@
 use std::process::exit;
 use crate::generator::{instructions, Generator, FUNC_PARAM_REGS};
-use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermCharLiteral, NodeTermFuncCall, NodeTermIdent, NodeTermIntLiteral, NodeTermUninitializedArray, Terms};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermCharLiteral, NodeTermFuncCall, NodeTermIdent, NodeTermIntLiteral, NodeTermNewObj, NodeTermUninitializedArray, Terms};
 
 impl Generator
 {
@@ -15,7 +15,8 @@ impl Generator
             Terms::Bracket(node_bracket) => self.gen_bracket_term(node_bracket),
             Terms::NodeTermFuncCall(node_call) => self.gen_call_term(node_call),
             Terms::Array(node_array) => self.gen_array_term(node_array),
-            Terms::UninitializedArray(node_uninitialized_array) => self.gen_initialize_array_term(node_uninitialized_array)
+            Terms::UninitializedArray(node_uninitialized_array) => self.gen_initialize_array_term(node_uninitialized_array),
+            Terms::NodeTermNewObj(node_new_obj) => self.gen_new_obj(node_new_obj)
         }
     }
 
@@ -97,4 +98,19 @@ impl Generator
         instructions::push(self, "%rax");
     }
 
+
+    pub(super) fn gen_new_obj(&mut self, node_new_obj: &NodeTermNewObj)
+    {
+        let class_declaration = self.class_table.get(&node_new_obj.get_ident().data);
+
+        if class_declaration.is_none()
+        {
+            eprintln!("Unknown type {}.", node_new_obj.get_ident().data);
+        }
+
+        instructions::movq_immediate(self, &(class_declaration.unwrap().get_size() * 8).to_string(), "%rdi");
+
+        instructions::call(self, "malloc");
+        instructions::push(self, "%rax");
+    }
 }

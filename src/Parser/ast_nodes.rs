@@ -1,11 +1,12 @@
 use crate::parser::ast_nodes::stmt::NodeStmt;
 use crate::lexer::token::Token;
-
+use crate::parser::ast_nodes::class::NodeClassDecl;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DataType
 {
-    Integer, Char, Float, Array(Box<DataType>)
+    Integer, Char, Float, Array(Box<DataType>),
+    Custom (u32, String)
 }
 
 
@@ -20,7 +21,7 @@ impl TryFrom<&str> for DataType // used only to infer atomic types
             "Integer" => Ok(Self::Integer),
             "Float" => Ok(Self::Float),
             "Char" => Ok(Self::Char),
-            _ => Err(format!("Unknown type '{}'", value)),
+            _ => Ok(Self::Custom(0, value.to_string())),
         }
     }
 }
@@ -42,6 +43,7 @@ impl From<DataType> for String
                 str.push_str(">");
                 str
             },
+            DataType::Custom(id, name) => format!("{}: {}", name, id)
         }
     }
 }
@@ -51,7 +53,7 @@ pub mod term
 {
     use crate::lexer::token::Token;
     use crate::parser::ast_nodes::DataType;
-    use crate::parser::ast_nodes::expr::{Exprs, NodeExpr};
+    use crate::parser::ast_nodes::expr::{NodeExpr};
 
     #[derive(Debug, Clone)]
 
@@ -195,12 +197,38 @@ pub mod term
         }
     }
 
+
+    #[derive(Debug, Clone)]
+    pub struct NodeTermNewObj
+    {
+        ident: Token,
+        data_type: DataType
+    }
+
+    impl NodeTermNewObj
+    {
+        pub fn new(ident: Token, data_type: DataType) -> Self
+        {
+            Self
+            {
+                ident,
+                data_type
+            }
+        }
+
+        pub fn get_ident(&self) -> &Token
+        {
+            &self.ident
+        }
+    }
+
     #[derive(Debug, Clone)]
     pub enum Terms
     {
         Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral),
         CharLiteral(NodeTermCharLiteral), Bracket(NodeTermBracket), NodeTermFuncCall(NodeTermFuncCall),
-        Array(NodeTermArray), UninitializedArray(NodeTermUninitializedArray)
+        Array(NodeTermArray), UninitializedArray(NodeTermUninitializedArray),
+        NodeTermNewObj(NodeTermNewObj)
     }
 
     #[derive(Debug, Clone)]
@@ -797,18 +825,82 @@ pub mod functions
 }
 
 
+pub mod class
+{
+    use crate::lexer::token::Token;
+    use crate::parser::ast_nodes::{DataType};
+    use crate::parser::ast_nodes::functions::NodeFuncDecl;
+
+    #[derive(Clone, Debug)]
+    pub struct ClassDecVar
+    {
+        ident: Token,
+        data_type: DataType,
+        offset: u32
+    }
+    impl ClassDecVar
+    {
+        pub fn new(ident: Token, data_type: DataType) -> Self
+        {
+            Self
+            {
+                ident,
+                data_type,
+                offset: 0
+            }
+        }
+
+        pub fn set_offset(&mut self, offset: u32)
+        {
+            self.offset = offset
+        }
+
+        pub fn get_ident(&self) -> &Token
+        {
+            &self.ident
+        }
+    }
+    #[derive(Clone, Debug)]
+    pub struct NodeClassDecl
+    {
+        methods: Vec<NodeFuncDecl>,
+        fields: Vec<ClassDecVar>,
+        size: u32
+    }
+
+    impl NodeClassDecl
+    {
+        pub fn new(methods: Vec<NodeFuncDecl>, fields: Vec<ClassDecVar>, size: u32) -> Self
+        {
+            Self
+            {
+                methods,
+                fields,
+                size
+            }
+        }
+        pub fn get_size(&self) -> &u32
+        {
+            &self.size
+        }
+
+    }
+}
+
+
 // the program entry point, the start of the AST
 #[derive(Debug)]
 pub struct NodeProg
 {
     stmts : Vec<NodeStmt>,
-    functions: Vec<functions::NodeFuncDecl>
+    functions: Vec<functions::NodeFuncDecl>,
+    classes: Vec<NodeClassDecl>
 }
 impl NodeProg
 {
     pub fn new() -> Self
     {
-        Self { stmts: Vec::new(), functions: Vec::new() }
+        Self { stmts: Vec::new(), functions: Vec::new(), classes: Vec::new() }
     }
 
     pub fn add_stmt(&mut self, stmt: NodeStmt)
@@ -830,5 +922,16 @@ impl NodeProg
     pub fn add_function(&mut self, function: functions::NodeFuncDecl)
     {
         self.functions.push(function);
+    }
+
+
+    pub fn add_class(&mut self, class: NodeClassDecl)
+    {
+        self.classes.push(class);
+    }
+
+    pub fn get_classes(&self) -> &Vec<NodeClassDecl>
+    {
+        &self.classes
     }
 }

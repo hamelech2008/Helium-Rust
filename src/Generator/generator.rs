@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::process::exit;
+use crate::parser::ast_nodes::class::NodeClassDecl;
 use crate::parser::ast_nodes::NodeProg;
 use crate::parser::ast_nodes::expr::{Exprs, NodeArrayAccess, NodeExpr, NodeTerneryExpr};
 use crate::parser::ast_nodes::functions::NodeFuncDecl;
@@ -27,7 +28,8 @@ pub struct Generator
     output: String,
     stack_size: u32,
     vars: Vec<HashMap<String, u32>>,
-    label_counter: u32
+    label_counter: u32,
+    class_table : HashMap<String, NodeClassDecl>
 }
 
 
@@ -50,7 +52,7 @@ impl Generator
         self.vars.iter().rev().find_map(|scope| scope.get(ident))
     }
 
-    pub fn new(prog: NodeProg) -> Self
+    pub fn new(prog: NodeProg, class_table: HashMap<String, NodeClassDecl>) -> Self
     {
         Self
         {
@@ -58,7 +60,8 @@ impl Generator
             output: String::with_capacity(4096),
             stack_size: 1,
             vars: Vec::new(),
-            label_counter: 0
+            label_counter: 0,
+            class_table
         }
     }
 

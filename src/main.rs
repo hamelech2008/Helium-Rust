@@ -35,7 +35,7 @@ fn main()
     let node_prog = parser.parse();
 
     // println!("{:#?}", node_prog);
-    let generator = generator::Generator::new(node_prog);
+    let generator = generator::Generator::new(node_prog, parser.class_table);
     let output = generator.generate_prog();
 
     // println!("{:#?}", parser.symbol_table);

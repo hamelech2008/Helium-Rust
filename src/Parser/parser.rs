@@ -3,12 +3,15 @@ pub mod ast_nodes;
 pub mod stmt_parser;
 pub mod term_parser;
 
+pub mod class_parser;
 pub mod symbol_table;
 
+use std::collections::HashMap;
 use std::process::exit;
 use crate::lexer::{binary_prec};
 use crate::parser::ast_nodes::{DataType, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
+use crate::parser::ast_nodes::class::NodeClassDecl;
 use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeArrayAccess, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeTerneryExpr, Operator};
 use crate::parser::ast_nodes::functions::{FuncDecVar, NodeFuncDecl};
 use crate::parser::symbol_table::{Symbol, SymbolTable};
@@ -47,6 +50,7 @@ pub struct Parser
     tokens : Vec<Token>,
     index: i32,
     pub symbol_table : SymbolTable,
+    pub class_table: HashMap<String, NodeClassDecl>
 }
 
 impl Parser
@@ -58,6 +62,7 @@ impl Parser
             tokens,
             index: 0,
             symbol_table: SymbolTable::new(),
+            class_table: HashMap::new(),
         }
     }
 
@@ -67,12 +72,19 @@ impl Parser
 
         while self.peek().is_some()
         {
-            if let Some(function) = self.parse_function() {prog.add_function(function);}
-            if let Some(stmt) = self.parse_stmt(true) {prog.add_stmt(stmt);}
+            if let Some(class) = self.parse_class()
+            {
+                prog.add_class(class);
+            }
+            else if let Some(function) = self.parse_function() {prog.add_function(function);}
+            else if let Some(stmt) = self.parse_stmt(true) {prog.add_stmt(stmt);}
         }
 
         prog
     }
+
+
+
 
 
     // function parsing
