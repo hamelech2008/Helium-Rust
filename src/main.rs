@@ -35,11 +35,11 @@ fn main()
     let mut parser = parser::Parser::new(lexer.tokens);
     let node_prog = parser.parse();
 
-    // println!("{:#?}", node_prog);
+    // println!("{:#?}", node_prog.get_classes());
     let generator = generator::Generator::new(node_prog, parser.class_table);
     let output = generator.generate_prog();
 
-    // println!("{:#?}", parser.symbol_table);
+    // println!("{:#?}", parser.class_table);
 
     let elapsed = start.elapsed();
     println!("Execution time: {:?}", elapsed);

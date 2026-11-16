@@ -1,10 +1,12 @@
+use std::collections::hash_map::Iter;
 use std::collections::HashMap;
 use std::process::exit;
 use crate::lexer::token::Token;
 use crate::parser::ast_nodes::class::{ClassDecVar, NodeClassDecl};
-use crate::parser::ast_nodes::DataType;
 use crate::parser::ast_nodes::expr::NodeExpr;
+use crate::parser::ast_nodes::functions::NodeFuncDecl;
 
+#[derive(Debug)]
 pub struct ClassTable
 {
     class_table: HashMap<String, NodeClassDecl>
@@ -17,6 +19,17 @@ impl ClassTable
     pub fn get_class_member(&self, parent_class: &NodeExpr, member: &Token) -> Option<&ClassDecVar>
     {
         self.class_table.get(&String::from(parent_class.get_data_type()))?.fields.get(&member.data)
+    }
+
+    pub fn get_class_method(&self, parent_class: &NodeExpr, method: &Token) -> Option<&NodeFuncDecl>
+    {
+        self.class_table.get(&String::from(parent_class.get_data_type()))?.get_methods().get(&method.data)
+
+    }
+
+    pub fn get_class_name(&self, class: &NodeExpr) -> String
+    {
+        String::from(class.get_data_type())
     }
 
     pub fn define_class(&mut self, class_ident: String, class_decl: NodeClassDecl)
@@ -54,5 +67,10 @@ impl ClassTable
         }
 
         class_decl.unwrap().fields.get(&member.data).unwrap().offset
+    }
+
+    pub fn get_itr(&self) -> Iter<String, NodeClassDecl>
+    {
+        self.class_table.iter()
     }
 }

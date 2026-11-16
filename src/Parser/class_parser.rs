@@ -19,7 +19,9 @@ impl Parser
             if self.try_consume(TokenType::LeftCurly).is_none() {return None;}
 
             let mut fields = HashMap::new();
-            let mut methods = Vec::new();
+            let mut methods = HashMap::new();
+
+
             let mut offset = 0;
             loop
             {
@@ -33,11 +35,22 @@ impl Parser
                         offset += 1;
                     }
                 }
-                else if self.try_peek(TokenType::Function) // method
+                else {break;}
+            }
+
+            let mut node_class = NodeClassDecl::new(methods, fields, offset);
+
+            self.class_table.define_class(ident.clone().data, node_class.clone());
+
+
+            loop
+            {
+                if self.try_peek(TokenType::Function) // method
                 {
                     if let Some(method) = self.parse_function()
                     {
-                        methods.push(method);
+                        let ident = method.get_ident().clone().data;
+                        node_class.add_method(ident, method);
                     }
                 }
                 else {break;}
@@ -45,9 +58,6 @@ impl Parser
 
             // consume the '}' token
             if self.try_consume(TokenType::RightCurly).is_none() {return None;}
-
-
-            let node_class = NodeClassDecl::new(methods, fields, offset);
 
             self.class_table.define_class(ident.data, node_class.clone());
             return Some(node_class);

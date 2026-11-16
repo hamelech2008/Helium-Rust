@@ -13,6 +13,7 @@ use crate::parser::ast_nodes::{DataType, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeArrayAccess, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeMemberAccess, NodeTerneryExpr, Operator};
 use crate::parser::ast_nodes::functions::{FuncDecVar, NodeFuncDecl};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermFuncCall, Terms};
 use crate::parser::symbol_table::{Symbol, SymbolTable};
 
 #[macro_export]
@@ -383,13 +384,36 @@ impl Parser
                         {
                             if let Some(member) = self.try_consume(TokenType::Ident)
                             {
-                                let node_obj_access = NodeMemberAccess::new(expr.clone(), member.clone());
-
-
-
-                                if let Some(class_dec_var) = self.class_table.get_class_member(&expr, &member)
+                                if self.try_peek(TokenType::LeftBracket) // method call
                                 {
-                                    expr = NodeExpr::new(Exprs::NodeMemberAccess(node_obj_access), class_dec_var.get_data_type().clone());
+                                    self.consume(); // consume the '(' token
+
+                                    let mut args = self.get_func_args();
+
+                                    // consume the ')' token
+                                    if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+
+                                    args.push(expr.clone());
+
+                                    let mut node_method_access = NodeTermFuncCall::new(member.clone(), args);
+                                    if let Some(method) = self.class_table.get_class_method(&expr, &member)
+                                    {
+                                        let method_data_type = self.symbol_table.get_function(&method.get_ident().data);
+                                        node_method_access.prefix_ident(&self.class_table.get_class_name(&expr));
+                                        expr = NodeExpr::new(Exprs::Term(NodeTerm::new(Terms::NodeTermFuncCall(node_method_access), method_data_type.clone())), method_data_type);
+                                    }
+
+                                }
+                                else // member access
+                                {
+
+                                    let node_obj_access = NodeMemberAccess::new(expr.clone(), member.clone());
+
+                                    // get the data type of the field
+                                    if let Some(class_dec_var) = self.class_table.get_class_member(&expr, &member)
+                                    {
+                                        expr = NodeExpr::new(Exprs::NodeMemberAccess(node_obj_access), class_dec_var.get_data_type().clone());
+                                    }
                                 }
                             }
                             else {error_expected!("member after '.'");}

@@ -78,6 +78,24 @@ impl Generator
         let funcs = self.prog.get_functions().to_vec();
         let stmts = self.prog.get_stmts().to_vec();
 
+
+        let methods: Vec<_> = self.class_table
+            .get_itr()
+            .flat_map(|(class_name, class)| {
+                class.get_methods()
+                    .values()
+                    .cloned()
+                    .map(move |method| (class_name.clone(), method))
+            })
+            .collect();
+
+        for (class_name, mut method) in methods
+        {
+            method.prefix_name(&class_name);
+            self.gen_function(&method);
+        }
+
+
         for func in &funcs
         {
             self.gen_function(func);
@@ -146,7 +164,8 @@ impl Generator
             Exprs::LogicExpr(node_logic_expr) => self.gen_logic_expr(node_logic_expr),
             Exprs::TerneryExpr(node_ternery_expr) => self.gen_ternery_expr(node_ternery_expr),
             Exprs::ArrayAccess(node_array_access) => self.gen_array_index_expr(node_array_access),
-            Exprs::NodeMemberAccess(node_member_access) => self.get_member_access(node_member_access)
+            Exprs::NodeMemberAccess(node_member_access) => self.gen_member_access(node_member_access)
+
         }
     }
 
@@ -197,7 +216,7 @@ impl Generator
     }
 
 
-    fn get_member_access(&mut self, member_access: &NodeMemberAccess)
+    fn gen_member_access(&mut self, member_access: &NodeMemberAccess)
     {
         let field = self.class_table.get_class_member(member_access.get_object(), member_access.get_member());
 
@@ -214,6 +233,8 @@ impl Generator
         instructions::movq(self, &format!("{}(%rax)", offset), "%rbx");
         instructions::push(self, "%rbx");
     }
+
+
 
     // helper functions
     fn gen_label(&mut self) -> String

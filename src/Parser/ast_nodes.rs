@@ -136,6 +136,11 @@ pub mod term
         {
             &self.exprs
         }
+
+        pub fn prefix_ident(&mut self, prefix: &str)
+        {
+            self.ident.data = format!("{}_{}", prefix, self.ident.data);
+        }
     }
 
 
@@ -436,6 +441,8 @@ pub mod expr
             &self.member
         }
     }
+
+
 
     #[derive(Debug, Clone)]
 
@@ -851,6 +858,11 @@ pub mod functions
         {
             &self.scope
         }
+
+        pub fn prefix_name(&mut self, name: &str)
+        {
+            self.ident.data = format!("{}_{}", name, self.ident.data)
+        }
     }
 }
 
@@ -904,14 +916,14 @@ pub mod class
     #[derive(Clone, Debug)]
     pub struct NodeClassDecl
     {
-        methods: Vec<NodeFuncDecl>,
+        methods: HashMap<String, NodeFuncDecl>,
         pub fields: HashMap<String, ClassDecVar>,
         size: u32
     }
 
     impl NodeClassDecl
     {
-        pub fn new(methods: Vec<NodeFuncDecl>, fields: HashMap<String, ClassDecVar>, size: u32) -> Self
+        pub fn new(methods: HashMap<String, NodeFuncDecl>, fields: HashMap<String, ClassDecVar>, size: u32) -> Self
         {
             Self
             {
@@ -919,6 +931,11 @@ pub mod class
                 fields,
                 size
             }
+        }
+
+        pub fn add_method(&mut self, method_name: String, method_value: NodeFuncDecl)
+        {
+            self.methods.insert(method_name, method_value);
         }
         pub fn get_size(&self) -> &u32
         {
@@ -930,7 +947,7 @@ pub mod class
             &self.fields
         }
 
-        pub fn get_methods(&self) -> &Vec<NodeFuncDecl>
+        pub fn get_methods(&self) -> &HashMap<String, NodeFuncDecl>
         {
             &self.methods
         }
