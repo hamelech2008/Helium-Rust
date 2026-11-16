@@ -43,7 +43,7 @@ impl From<DataType> for String
                 str.push_str(">");
                 str
             },
-            DataType::Custom(id, name) => format!("{}: {}", name, id)
+            DataType::Custom(id, name) => name//format!("{}: {}", name, id)
         }
     }
 }
@@ -894,6 +894,11 @@ pub mod class
         pub fn get_offset(&self) -> u32
         {
             self.offset
+        }
+
+        pub fn get_data_type(&self) -> &DataType
+        {
+            &self.data_type
         }
     }
     #[derive(Clone, Debug)]

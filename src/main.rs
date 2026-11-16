@@ -10,6 +10,7 @@ mod parser;
 
 #[path = "Generator/generator.rs"]
 mod generator;
+pub mod class_table;
 
 fn main()
 {

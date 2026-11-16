@@ -215,7 +215,12 @@ impl Generator
 
     pub fn gen_member_access_addr(&mut self, node_member_access: &NodeMemberAccess)
     {
+        let member_offset = self.class_table.get_member_offset(node_member_access.get_object(), node_member_access.get_member());
+        self.gen_expr(node_member_access.get_object()); // generate the object expression
+        instructions::pop(self, "%rax");
 
+        instructions::leaq(self, &format!("{}(%rax)", member_offset * 8), "%rax");
+        instructions::push(self, "%rax");
     }
 
 }

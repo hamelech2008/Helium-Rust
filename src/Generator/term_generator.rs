@@ -101,14 +101,7 @@ impl Generator
 
     pub(super) fn gen_new_obj(&mut self, node_new_obj: &NodeTermNewObj)
     {
-        let class_declaration = self.class_table.get(&node_new_obj.get_ident().data);
-
-        if class_declaration.is_none()
-        {
-            eprintln!("Unknown type {}.", node_new_obj.get_ident().data);
-        }
-
-        instructions::movq_immediate(self, &(class_declaration.unwrap().get_size() * 8).to_string(), "%rdi");
+        instructions::movq_immediate(self, &(self.class_table.get_class_size(&node_new_obj.get_ident().data) * 8).to_string(), "%rdi");
 
         instructions::call(self, "malloc");
         instructions::push(self, "%rax");

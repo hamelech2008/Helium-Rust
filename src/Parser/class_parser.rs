@@ -49,7 +49,7 @@ impl Parser
 
             let node_class = NodeClassDecl::new(methods, fields, offset);
 
-            self.class_table.insert(ident.data, node_class.clone());
+            self.class_table.define_class(ident.data, node_class.clone());
             return Some(node_class);
         }
         None

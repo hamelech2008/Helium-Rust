@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::process::exit;
-use crate::parser::ast_nodes::class::NodeClassDecl;
-use crate::parser::ast_nodes::{DataType, NodeProg};
+use crate::class_table::ClassTable;
+use crate::parser::ast_nodes::{NodeProg};
 use crate::parser::ast_nodes::expr::{Exprs, NodeArrayAccess, NodeExpr, NodeMemberAccess, NodeTerneryExpr};
 use crate::parser::ast_nodes::functions::NodeFuncDecl;
 mod instructions;
@@ -29,7 +29,7 @@ pub struct Generator
     stack_size: u32,
     vars: Vec<HashMap<String, u32>>,
     label_counter: u32,
-    class_table : HashMap<String, NodeClassDecl>
+    class_table: ClassTable
 }
 
 
@@ -52,7 +52,7 @@ impl Generator
         self.vars.iter().rev().find_map(|scope| scope.get(ident))
     }
 
-    pub fn new(prog: NodeProg, class_table: HashMap<String, NodeClassDecl>) -> Self
+    pub fn new(prog: NodeProg, class_table: ClassTable) -> Self
     {
         Self
         {
@@ -199,27 +199,13 @@ impl Generator
 
     fn get_member_access(&mut self, member_access: &NodeMemberAccess)
     {
+        let field = self.class_table.get_class_member(member_access.get_object(), member_access.get_member());
 
-        let class = match member_access.get_object().get_data_type()
+        if field.is_none()
         {
-            DataType::Custom(id, name) => name,
-            _ => {
-                exit(1);
-            }
-        };
-
-        let class_declaration = self.class_table.get(&class);
-
-        if class_declaration.is_none()
-        {
-            eprintln!("Unknown type {}.", class);
+            eprintln!("Unknown field {}", member_access.get_member().data);
+            exit(1);
         }
-        let class_declaration = class_declaration.unwrap();
-
-
-        let field = class_declaration.get_fields().get(&member_access.get_member().data);
-
-        if field.is_none() {exit(1);}
 
         let offset = field.unwrap().get_offset() * 8;
         self.gen_expr(member_access.get_object());

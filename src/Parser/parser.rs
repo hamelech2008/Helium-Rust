@@ -6,12 +6,11 @@ pub mod term_parser;
 pub mod class_parser;
 pub mod symbol_table;
 
-use std::collections::HashMap;
 use std::process::exit;
+use crate::class_table::ClassTable;
 use crate::lexer::{binary_prec};
 use crate::parser::ast_nodes::{DataType, NodeProg, NodeScope};
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::ast_nodes::class::NodeClassDecl;
 use crate::parser::ast_nodes::expr::{BinOp, Exprs, LogicOp, NodeArrayAccess, NodeBinExpr, NodeExpr, NodeLogicExpr, NodeMemberAccess, NodeTerneryExpr, Operator};
 use crate::parser::ast_nodes::functions::{FuncDecVar, NodeFuncDecl};
 use crate::parser::symbol_table::{Symbol, SymbolTable};
@@ -50,7 +49,7 @@ pub struct Parser
     tokens : Vec<Token>,
     index: i32,
     pub symbol_table : SymbolTable,
-    pub class_table: HashMap<String, NodeClassDecl>
+    pub class_table: ClassTable
 }
 
 impl Parser
@@ -62,7 +61,7 @@ impl Parser
             tokens,
             index: 0,
             symbol_table: SymbolTable::new(),
-            class_table: HashMap::new(),
+            class_table: ClassTable::new()
         }
     }
 
@@ -384,12 +383,14 @@ impl Parser
                         {
                             if let Some(member) = self.try_consume(TokenType::Ident)
                             {
-                                let node_obj_access = NodeMemberAccess::new(expr, member);
+                                let node_obj_access = NodeMemberAccess::new(expr.clone(), member.clone());
 
-                                
-                                let member_type = DataType::Integer; // TODO: fix to dynamically get the member's data type
 
-                                expr = NodeExpr::new(Exprs::NodeMemberAccess(node_obj_access), member_type);
+
+                                if let Some(class_dec_var) = self.class_table.get_class_member(&expr, &member)
+                                {
+                                    expr = NodeExpr::new(Exprs::NodeMemberAccess(node_obj_access), class_dec_var.get_data_type().clone());
+                                }
                             }
                             else {error_expected!("member after '.'");}
                         }
