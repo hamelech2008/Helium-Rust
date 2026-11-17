@@ -207,23 +207,30 @@ pub mod term
     pub struct NodeTermNewObj
     {
         ident: Token,
-        data_type: DataType
+        data_type: DataType,
+        constructor_args: Vec<NodeExpr>
     }
 
     impl NodeTermNewObj
     {
-        pub fn new(ident: Token, data_type: DataType) -> Self
+        pub fn new(ident: Token, data_type: DataType, constructor_args: Vec<NodeExpr>) -> Self
         {
             Self
             {
                 ident,
-                data_type
+                data_type,
+                constructor_args
             }
         }
 
         pub fn get_ident(&self) -> &Token
         {
             &self.ident
+        }
+
+        pub fn get_args(&self) -> &Vec<NodeExpr>
+        {
+            &self.constructor_args
         }
     }
 

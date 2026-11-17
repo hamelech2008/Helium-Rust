@@ -105,5 +105,22 @@ impl Generator
 
         instructions::call(self, "malloc");
         instructions::push(self, "%rax");
+
+        node_new_obj.get_args().iter().enumerate().for_each(|(i, var)| {
+            let reg = FUNC_PARAM_REGS[i];
+
+            if i < 6
+            {
+                self.gen_expr(var);
+                instructions::pop(self, reg);
+            }
+        });
+
+        let class_name = &node_new_obj.get_ident().data;
+        
+        // pass "this" as a pointer to the object
+        instructions::movq(self, "0(%rsp)", FUNC_PARAM_REGS[node_new_obj.get_args().len()]); 
+        instructions::call(self, &format!("{class_name}_{class_name}"))
+
     }
 }

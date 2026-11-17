@@ -87,7 +87,16 @@ impl Parser
         if let Some(ident) = self.try_consume(TokenType::Ident)
         {
             let data_type = DataType::Custom(0, ident.clone().data);
-            let obj_creation = NodeTermNewObj::new(ident, data_type.clone());
+
+            // consume the '(' token
+            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!("(");}
+
+            let func_args = self.get_func_args(); // consume the constructor args
+
+            // consume the ')' token
+            if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+
+            let obj_creation = NodeTermNewObj::new(ident, data_type.clone(), func_args);
             let term = NodeTerm::new(Terms::NodeTermNewObj(obj_creation), data_type);
             return Some(term);
         }
