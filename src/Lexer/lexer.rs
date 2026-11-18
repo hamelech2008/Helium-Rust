@@ -1,5 +1,6 @@
 use regex::{Match, Regex};
 use crate::lexer::token::{TokenType};
+pub mod token_preprocessor;
 
 
 
@@ -59,6 +60,7 @@ impl Lexer
         | (?P<for>\bfor\b)
         | (?P<while>\bwhile\b)
         | (?P<if>\bif\b)
+        | (?P<fetch>\bfetch\b)
         | (?P<else>\belse\b)
         | (?P<function>\bfunction\b)
         | (?P<return>\breturn\b)
@@ -136,6 +138,10 @@ impl Lexer
             else if let Some(m) = caps.name("if")
             {
                 self.add_token(TokenType::If, m);
+            }
+            else if let Some(m) = caps.name("fetch")
+            {
+                self.add_token(TokenType::Fetch, m);
             }
             else if let Some(m) = caps.name("else")
             {

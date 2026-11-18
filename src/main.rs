@@ -29,10 +29,10 @@ fn main()
 
     let mut lexer = lexer::Lexer::new();
     lexer.tokenize(&source_code);
-
+    let tokens =  lexer::token_preprocessor::tokens_preprocess(&lexer.tokens);
     // println!("{:#?}", lexer.tokens);
 
-    let mut parser = parser::Parser::new(lexer.tokens);
+    let mut parser = parser::Parser::new(tokens);
     let node_prog = parser.parse();
 
     // println!("{:#?}", node_prog.get_classes());
