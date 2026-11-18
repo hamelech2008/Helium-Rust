@@ -1,0 +1,17 @@
+class Player
+{
+    dec health : Integer;
+    dec damage : Integer;
+}
+
+function main() -> Integer
+{
+    dec player = new Player();
+
+    player.health = 100;
+    player.damage = 20;
+
+    player.health = player.health - player.damage;
+
+    return player.health;
+}

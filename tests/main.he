@@ -1,4 +1,10 @@
+fetch <std_lib>
+
 function main()
 {
+    dec str = "Enter your name: ";
+    print(str);
+    dec name = input();
+    print(name);
     return 0;
 }

@@ -9,6 +9,20 @@ pub enum DataType
     Custom (u32, String)
 }
 
+impl DataType
+{
+    pub fn get_size(&self) -> u32
+    {
+        match self
+        {
+            DataType::Integer => 8,
+            DataType::Float => 8,
+            DataType::Char => 1,
+            DataType::Array(_type) => 8, // array is a pointer consisting of 8 bytes
+            DataType::Custom(_id, _data) => 8 // an object is a pointer consisting of 8 bytes
+        }
+    }
+}
 
 impl TryFrom<&str> for DataType // used only to infer atomic types
 {

@@ -1,0 +1,22 @@
+class Player
+{
+    dec health : Integer;
+
+    function set_health(dec value : Integer, dec this : Player)
+    {
+        this.health = value;
+    }
+}
+
+function main() -> Integer
+{
+    dec player1 = new Player();
+    dec player2 = new Player();
+
+    player1.set_health(100);
+    player2.set_health(200);
+
+    player1.health = 50;
+
+    return player1.health + player2.health;
+}

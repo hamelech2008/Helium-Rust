@@ -38,7 +38,7 @@ impl Generator
     pub(super) fn gen_string_literal_term(&mut self, node_string_literal: &NodeTermStringLiteral)
     {
 
-        instructions::movq_immediate(self, &(node_string_literal.get_value().data.len() * 8).to_string(), "%rdi");
+        instructions::movq_immediate(self, &node_string_literal.get_value().data.len().to_string(), "%rdi");
         instructions::call(self, "malloc"); // value returned in rax
 
         instructions::push(self, "%rax");
@@ -46,7 +46,7 @@ impl Generator
         for (i, c) in node_string_literal.get_value().data.chars().enumerate()
         {
             instructions::movq_immediate(self, & format!("'{}'",c), "%rbx");
-            instructions::movq(self, "%rbx", &format!("{}(%rax)", i * 8));
+            instructions::movb(self, "%bl", &format!("{}(%rax)", i));
         }
 
 
@@ -105,14 +105,13 @@ impl Generator
         {
             self.gen_expr(element);
         }
-
-        instructions::movq_immediate(self, &(node_array.get_elements().len() * 8).to_string(), "%rdi");
+        instructions::movq_immediate(self, &(node_array.get_elements().len() * node_array.get_elements()[0].get_data_type().get_size() as usize).to_string(), "%rdi");
         instructions::call(self, "malloc"); // value returned in rax
 
         node_array.get_elements().iter().enumerate().for_each(|(i, element)|
             {
                 instructions::pop(self, "%rbx");
-                instructions::movq(self, "%rbx", &format!("{}(%rax)", i * 8));
+                instructions::movq(self, "%rbx", &format!("{}(%rax)", i * node_array.get_elements()[0].get_data_type().get_size() as usize));
             });
 
         instructions::push(self, "%rax");
@@ -131,7 +130,8 @@ impl Generator
 
     pub(super) fn gen_new_obj(&mut self, node_new_obj: &NodeTermNewObj)
     {
-        instructions::movq_immediate(self, &(self.class_table.get_class_size(&node_new_obj.get_ident().data) * 8).to_string(), "%rdi");
+
+        instructions::movq_immediate(self, &self.class_table.get_class_size(&node_new_obj.get_ident().data).to_string(), "%rdi");
 
         instructions::call(self, "malloc");
         instructions::push(self, "%rax");

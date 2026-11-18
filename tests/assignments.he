@@ -1,0 +1,16 @@
+function main() -> Integer
+{
+    dec a = 10;
+    dec b = 20;
+
+    a = 30;
+    a = b;
+    b = 50;
+
+    dec c = a + b;
+
+    a = a + 10;
+    b = b * 2;
+
+    return a + b + c;
+}

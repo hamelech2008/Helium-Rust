@@ -209,7 +209,7 @@ impl Generator
         instructions::pop(self, "%rax"); // index
         instructions::pop(self, "%rbx"); // array
 
-        instructions::leaq(self, "(%rbx, %rax, 8)", "%rax"); // calculate offset fitting for a byte rbx[rax * 8]
+        instructions::leaq(self, &format!("(%rbx, %rax, {})", node_array_access.data_type.get_size()), "%rax"); // calculate offset fitting for a byte rbx[rax * 8]
         instructions::push(self, "%rax");
     }
 
@@ -219,7 +219,7 @@ impl Generator
         self.gen_expr(node_member_access.get_object()); // generate the object expression
         instructions::pop(self, "%rax");
 
-        instructions::leaq(self, &format!("{}(%rax)", member_offset * 8), "%rax");
+        instructions::leaq(self, &format!("{}(%rax)", member_offset), "%rax");
         instructions::push(self, "%rax");
     }
 

@@ -35,6 +35,24 @@ pub fn movq(generator: &mut generator::Generator, src: &str, dst: &str)
     generator.output.push_str("\n");
 }
 
+pub fn movzbq(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tmovzbq ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
+pub fn movb(generator: &mut generator::Generator, src: &str, dst: &str)
+{
+    generator.output.push_str("\tmovb ");
+    generator.output.push_str(src);
+    generator.output.push_str(", ");
+    generator.output.push_str(dst);
+    generator.output.push_str("\n");
+}
+
 
 pub fn addq(generator: &mut generator::Generator, src: &str, dst: &str)
 {

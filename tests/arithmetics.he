@@ -1,0 +1,13 @@
+function main() -> Integer
+{
+    dec a = 10 + 5;
+    dec b = 10 - 5;
+    dec c = 10 * 5;
+    dec d = 10 / 5;
+
+    dec e = 2 + 3 * 4;
+    dec f = (2 + 3) * 4;
+    dec g = 100 / 5 + 3 * 2 - 4;
+
+    return a + b + c + d + e + f + g;
+}

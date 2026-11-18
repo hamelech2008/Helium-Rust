@@ -1,0 +1,14 @@
+function main() -> Integer
+{
+    dec chars = [Char, 3];
+
+    chars[0] = 'a';
+    chars[1] = 'b';
+    chars[2] = 'c';
+
+    dec a = chars[0];
+    dec b = chars[1];
+    dec c = chars[2];
+
+    return a + b + c;
+}

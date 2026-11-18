@@ -1,0 +1,31 @@
+class Player
+{
+    dec health : Integer;
+
+    function take_damage(dec amount : Integer, dec this : Player)
+    {
+        this.health = this.health - amount;
+    }
+
+    function heal(dec amount : Integer, dec this : Player)
+    {
+        this.health = this.health + amount;
+    }
+
+    function get_health(dec this : Player) -> Integer
+    {
+        return this.health;
+    }
+}
+
+function main() -> Integer
+{
+    dec player = new Player();
+
+    player.health = 100;
+
+    player.take_damage(20);
+    player.heal(10);
+
+    return player.get_health();
+}

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::process::exit;
 use crate::lexer::token::Token;
 use crate::parser::ast_nodes::class::{ClassDecVar, NodeClassDecl};
+use crate::parser::ast_nodes::DataType;
 use crate::parser::ast_nodes::expr::NodeExpr;
 use crate::parser::ast_nodes::functions::NodeFuncDecl;
 
@@ -67,6 +68,28 @@ impl ClassTable
         }
 
         class_decl.unwrap().fields.get(&member.data).unwrap().offset
+    }
+
+
+
+    pub fn get_member_data_type(&self, parent_class: &NodeExpr, member: &Token) -> DataType
+    {
+        let class_ident = &String::from(parent_class.get_data_type());
+        let class_decl = self.class_table.get(class_ident);
+        if class_decl.is_none()
+        {
+            eprintln!("Unknown class {}", class_ident);
+            exit(1);
+        }
+
+        let member_var = class_decl.unwrap().fields.get(&member.data);
+        if member_var.is_none()
+        {
+            eprintln!("Unknown member {}", member.data);
+            exit(1);
+        }
+
+        class_decl.unwrap().fields.get(&member.data).unwrap().get_data_type().clone()
     }
 
     pub fn get_itr(&self) -> Iter<String, NodeClassDecl>

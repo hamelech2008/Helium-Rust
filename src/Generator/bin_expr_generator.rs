@@ -60,6 +60,8 @@ impl Generator
         instructions::pop(self, "%rax");
         instructions::pop(self, "%rbx");
 
+
+        instructions::xorq(self, "%rdx", "%rdx");
         instructions::divq(self, "%rbx");
 
         instructions::push(self, "%rax");

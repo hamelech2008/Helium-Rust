@@ -211,7 +211,17 @@ impl Generator
         self.gen_expr(&*node_array_access.index);
         instructions::pop(self, "%rax"); // index
         instructions::pop(self, "%rbx"); // array
-        instructions::movq(self, "(%rbx, %rax, 8)", "%rax"); // calculate offset fitting for a byte rbx[rax * 8]
+
+        let size = node_array_access.data_type.get_size();
+        let address = format!("(%rbx, %rax, {})", size);
+
+        match size
+        {
+            8 => instructions::movq(self, &address, "%rax"),
+            1 => instructions::movzbq(self, &address, "%rax"),
+            _ => panic!("Unsupported array element size: {}", size),
+        }
+
         instructions::push(self, "%rax");
     }
 
@@ -226,7 +236,7 @@ impl Generator
             exit(1);
         }
 
-        let offset = field.unwrap().get_offset() * 8;
+        let offset = field.unwrap().get_offset();
         self.gen_expr(member_access.get_object());
         instructions::pop(self, "%rax");
 

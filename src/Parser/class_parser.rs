@@ -19,7 +19,7 @@ impl Parser
             if self.try_consume(TokenType::LeftCurly).is_none() {return None;}
 
             let mut fields = HashMap::new();
-            let mut methods = HashMap::new();
+            let methods = HashMap::new();
 
 
             let mut offset = 0;
@@ -31,8 +31,9 @@ impl Parser
                     {
                         field.set_offset(offset);
                         let ident = field.get_ident().clone().data;
+                        let data_type = field.get_data_type().clone();
                         fields.insert(ident, field);
-                        offset += 1;
+                        offset += data_type.get_size();
                     }
                 }
                 else {break;}

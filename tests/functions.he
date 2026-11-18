@@ -1,0 +1,29 @@
+function add(dec a : Integer, dec b : Integer) -> Integer
+{
+    return a + b;
+}
+
+function subtract(dec a : Integer, dec b : Integer) -> Integer
+{
+    return a - b;
+}
+
+function multiply(dec a : Integer, dec b : Integer) -> Integer
+{
+    return a * b;
+}
+
+function calculate(dec a : Integer, dec b : Integer) -> Integer
+{
+    return multiply(add(a, b), 2);
+}
+
+function main() -> Integer
+{
+    dec a = add(10, 20);
+    dec b = subtract(50, 20);
+    dec c = multiply(5, 5);
+    dec d = calculate(10, 20);
+
+    return a + b + c + d;
+}
