@@ -1,6 +1,6 @@
 use std::process::exit;
 use crate::generator::{instructions, Generator, FUNC_PARAM_REGS};
-use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermCharLiteral, NodeTermFuncCall, NodeTermIdent, NodeTermIntLiteral, NodeTermNewObj, NodeTermUninitializedArray, Terms};
+use crate::parser::ast_nodes::term::{NodeTerm, NodeTermArray, NodeTermBracket, NodeTermCharLiteral, NodeTermFuncCall, NodeTermIdent, NodeTermIntLiteral, NodeTermNewObj, NodeTermStringLiteral, NodeTermUninitializedArray, Terms};
 
 impl Generator
 {
@@ -11,6 +11,7 @@ impl Generator
         {
             Terms::IntLiteral(node_int_literal) => self.gen_int_literal_term(node_int_literal),
             Terms::CharLiteral(node_char_literal) => self.gen_char_literal_term(node_char_literal),
+            Terms::StringLiteral(node_string_literal) => self.gen_string_literal_term(node_string_literal),
             Terms::Ident(node_ident) => self.gen_ident_term(node_ident),
             Terms::Bracket(node_bracket) => self.gen_bracket_term(node_bracket),
             Terms::NodeTermFuncCall(node_call) => self.gen_call_term(node_call),
@@ -32,6 +33,35 @@ impl Generator
         let literal_value = &*node_char_literal.get_value().data;
         instructions::movq_immediate(self, literal_value, "%rax");
         instructions::push(self, "%rax");
+    }
+
+    pub(super) fn gen_string_literal_term(&mut self, node_string_literal: &NodeTermStringLiteral)
+    {
+
+        instructions::movq_immediate(self, &(node_string_literal.get_value().data.len() * 8).to_string(), "%rdi");
+        instructions::call(self, "malloc"); // value returned in rax
+
+        instructions::push(self, "%rax");
+
+        for (i, c) in node_string_literal.get_value().data.chars().enumerate()
+        {
+            instructions::movq_immediate(self, & format!("'{}'",c), "%rbx");
+            instructions::movq(self, "%rbx", &format!("{}(%rax)", i * 8));
+        }
+
+
+        instructions::movq_immediate(self, "16", "%rdi");
+        instructions::call(self, "malloc");
+
+        instructions::pop(self, "%rdi");
+
+        instructions::push(self, "%rax");
+
+
+        instructions::movq_immediate(self, &node_string_literal.get_value().data.len().to_string(), "%rsi");
+        instructions::movq(self, "%rax", "%rdx");
+        instructions::call(self, "String_String");
+
     }
 
     pub(super) fn gen_ident_term(&mut self, node_ident: &NodeTermIdent)

@@ -160,6 +160,12 @@ impl Parser
                 }
             }
 
+            // function declaration (not implementations)
+            if self.try_peek(TokenType::SemiColon)
+            {
+                self.consume(); // consume the ';' token
+                return None
+            }
 
             let scope = self.parse_scope();
             let node_function_decl = NodeFuncDecl::new(ident, scope, func_params);

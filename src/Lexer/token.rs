@@ -11,7 +11,7 @@ pub enum TokenType
     Division, EqualsTo, GreaterOrEqual, LesserOrEqual, NotEqual,
     And, Or,
     Ternary, Colon,
-    IntLiteral, CharLiteral,
+    IntLiteral, CharLiteral, StringLiteral,
     SemiColon, LeftBracket, RightBracket, LeftCurly, RightCurly, LeftSquare, RightSquare, Comma
 }
 

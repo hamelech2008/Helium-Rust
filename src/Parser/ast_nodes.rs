@@ -83,6 +83,21 @@ pub mod term
         }
     }
 
+    
+    #[derive(Debug, Clone)]
+    pub struct NodeTermStringLiteral
+    {
+        value: Token
+    }
+    impl NodeTermStringLiteral
+    {
+        pub fn new(value: Token) -> Self {Self{value}}
+        pub fn get_value(&self) -> &Token
+        {
+            &self.value
+        }
+    }
+
 
     #[derive(Debug, Clone)]
     pub struct NodeTermIdent
@@ -238,7 +253,7 @@ pub mod term
     pub enum Terms
     {
         Ident(NodeTermIdent), IntLiteral(NodeTermIntLiteral),
-        CharLiteral(NodeTermCharLiteral), Bracket(NodeTermBracket), NodeTermFuncCall(NodeTermFuncCall),
+        CharLiteral(NodeTermCharLiteral), StringLiteral(NodeTermStringLiteral), Bracket(NodeTermBracket), NodeTermFuncCall(NodeTermFuncCall),
         Array(NodeTermArray), UninitializedArray(NodeTermUninitializedArray),
         NodeTermNewObj(NodeTermNewObj)
     }

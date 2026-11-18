@@ -52,15 +52,22 @@ impl Parser
             return self.parse_func_call_term();
         }
 
-        // check for an in literal term for e.g: 1, 3, 10...
+        // check for an int literal term for e.g: 1, 3, 10...
         if let Some(int_literal) = self.try_consume(TokenType::IntLiteral)
         {
             return self.parse_int_literal_term(&int_literal);
         }
 
+        // check for a char literal term
         if let Some(char_literal) = self.try_consume(TokenType::CharLiteral)
         {
             return self.parse_char_literal_term(&char_literal);
+        }
+
+        // check for a string literal term
+        if let Some(string_literal) = self.try_consume(TokenType::StringLiteral)
+        {
+            return self.parse_string_literal_term(&string_literal);
         }
 
         // check for an identifier term - variables
@@ -160,6 +167,15 @@ impl Parser
         let node_term_literal = ast_nodes::term::NodeTermCharLiteral::new(literal.clone());
 
         let term = NodeTerm::new(Terms::CharLiteral(node_term_literal), DataType::Char);
+
+        Some(term)
+    }
+
+    fn parse_string_literal_term(&self, literal: &Token) -> Option<NodeTerm>
+    {
+        let node_term_literal = ast_nodes::term::NodeTermStringLiteral::new(literal.clone());
+
+        let term = NodeTerm::new(Terms::StringLiteral(node_term_literal), DataType::Custom(0, "String".to_string())); // custom data type, note: must link against the standard library
 
         Some(term)
     }

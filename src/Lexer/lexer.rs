@@ -1,5 +1,5 @@
 use regex::{Match, Regex};
-use crate::lexer::token::{TokenType};
+use crate::lexer::token::{Token, TokenType};
 pub mod token_preprocessor;
 
 
@@ -54,7 +54,7 @@ impl Lexer
     {
         // regex filter to search for keywords and expressions, for e.g: &&, ||, exit, etc...
         let tokens_re = Regex::new(
-            r"(?x)
+            r#"(?x)
         (?P<dec>\bdec\b)
         | (?P<exit>\bexit\b)
         | (?P<for>\bfor\b)
@@ -75,6 +75,7 @@ impl Lexer
         | (?P<equals>=)
         | (?P<char>'[^']')
         | (?P<int>-?\d+)
+        | (?P<string>"([^"\\]|\\.)*")
         | (?P<semi>;)
         | (?P<comma>,)
         | (?P<colon>:)
@@ -93,7 +94,7 @@ impl Lexer
         | (?P<right_curly>})
         | (?P<left_square>\[)
         | (?P<right_square>])
-        "
+        "#
         ).unwrap();
 
         // loop on the source code to add then tokens to the vector
@@ -158,6 +159,15 @@ impl Lexer
             else if let Some(m) = caps.name("char")
             {
                 self.add_token(TokenType::CharLiteral, m);
+            }
+            else if let Some(m) = caps.name("string")
+            {
+                let value = &m.as_str()[1..m.as_str().len() - 1];
+                self.tokens.push(Token
+                {
+                    token_type: TokenType::StringLiteral,
+                    data: value.to_string(),
+                });
             }
             else if let Some(m) = caps.name("semi")
             {
