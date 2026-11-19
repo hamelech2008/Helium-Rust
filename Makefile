@@ -1,8 +1,8 @@
 PREFIX ?= /usr/local/helium
 
-BIN_DIR = $(PREFIX)/bin
+BIN_DIR = /usr/local/bin
 LIB_DIR = $(PREFIX)/lib
-INCLUDE_DIR = $(PREFIX)/include
+INCLUDE_DIR = $(PREFIX)/fetch
 
 BUILD_DIR = build
 
@@ -42,9 +42,9 @@ $(foreach lib,$(BUILTIN_LIBS),$(eval $(call LIBRARY_template,$(lib))))
 
 # install compiler, libraries and helium declarations
 install: all
-	install -d $(BIN_DIR) $(LIB_DIR) $(INCLUDE_DIR)
+	install -d $(LIB_DIR) $(INCLUDE_DIR)
 
-	install -m 755 target/release/helium $(BIN_DIR)/helium
+	install -m 755 target/release/Helium $(BIN_DIR)/helium
 
 	install -m 755 $(LIB_TARGETS) $(LIB_DIR)/
 
