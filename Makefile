@@ -20,21 +20,26 @@ all: compiler libraries
 compiler:
 	cargo build --release
 
-# assemble all the builtin libraries to their .so files
+# generate individual shared libraries
+LIB_TARGETS = $(foreach lib,$(BUILTIN_LIBS),\
+    $(patsubst builtin/$(lib)/src/%.s,$(BUILD_DIR)/$(lib)/%.so,\
+    $(wildcard builtin/$(lib)/src/*.s)))
+
 libraries: $(LIB_TARGETS)
 
-# generate build rules for each library
 define LIBRARY_template
 
 SOURCES_$(1) := $$(wildcard builtin/$(1)/src/*.s)
 OBJECTS_$(1) := $$(patsubst builtin/$(1)/src/%.s,$(BUILD_DIR)/$(1)/%.o,$$(SOURCES_$(1)))
 
+# compile assembly files
 $(BUILD_DIR)/$(1)/%.o: builtin/$(1)/src/%.s
 	mkdir -p $$(@D)
 	$$(AS) -o $$@ $$<
 
-$(BUILD_DIR)/lib$(1).so: $$(OBJECTS_$(1))
-	$$(LD) -shared -o $$@ $$^
+# link each object into its own shared library
+$(BUILD_DIR)/$(1)/%.so: $(BUILD_DIR)/$(1)/%.o
+	$$(LD) -shared -o $$@ $$<
 
 endef
 
