@@ -1,0 +1,10 @@
+class File
+{
+    dec fd : Integer;
+
+    function File(dec path: String, dec this : File);
+
+    function read(dec bytes: Integer, dec this : File) -> String;
+
+    function write(dec content: String, dec this : File) -> Integer;
+}

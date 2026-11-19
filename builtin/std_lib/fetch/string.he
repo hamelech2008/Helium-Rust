@@ -1,0 +1,8 @@
+class String
+{
+    dec content: Array<Char>;
+    dec len: Integer;
+    
+    function length() -> Integer;
+    function get() -> Char;
+}

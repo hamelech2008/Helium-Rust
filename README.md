@@ -120,3 +120,37 @@ The compilation process consists of several stages:
 1. **Lexical Analysis** – Converts source code into tokens.
 2. **Parsing** – Checks for valid syntax and constructs the AST.
 3. **Code Generation** - Generates the x86-64 assembly.
+
+
+## Building & Installation
+
+### Requirements
+- Rust and Cargo
+- GNU Binutils (`as`, `ld`)
+- Make
+
+### Build
+
+Build the compiler:
+
+    make compiler
+
+Build the standard libraries:
+
+    make libraries
+
+Or build both:
+
+    make
+
+### Install
+
+Install the compiler and built-in libraries:
+
+    sudo make install
+
+By default, Helium is installed to `/usr/local/helium`.
+
+You can change the installation directory:
+
+    sudo make install PREFIX=/your/custom/path

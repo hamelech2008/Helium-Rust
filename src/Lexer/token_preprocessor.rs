@@ -42,7 +42,7 @@ pub fn tokens_preprocess(tokens: &[Token]) -> Vec<Token>
             }
             i += 1; // consume the '>' token
 
-            let he_path = format!("/usr/local/helium/include/{}.he", path);
+            let he_path = format!("/usr/local/helium/fetch/{}.he", path);
             let so_path = format!("/usr/local/helium/lib/{}.so", path);
 
             let source_code = fs::read_to_string(&he_path).expect("Could not read file.");
