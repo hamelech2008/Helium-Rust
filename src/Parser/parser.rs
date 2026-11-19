@@ -159,15 +159,18 @@ impl Parser
                     self.symbol_table.insert(ident.clone().data, symbol);
                 }
             }
+            let scope : Option<NodeScope>;
 
             // function declaration (not implementations)
             if self.try_peek(TokenType::SemiColon)
             {
                 self.consume(); // consume the ';' token
-                return None
+                scope = None;
             }
-
-            let scope = self.parse_scope();
+            else
+            {
+                scope = Some(self.parse_scope());
+            }
             let node_function_decl = NodeFuncDecl::new(ident, scope, func_params);
 
             return Some(node_function_decl);

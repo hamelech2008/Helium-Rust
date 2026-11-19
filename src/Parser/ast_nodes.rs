@@ -865,12 +865,12 @@ pub mod functions
     {
         ident: Token,
         declared_vars: Vec<FuncDecVar>,
-        scope: NodeScope,
+        scope: Option<NodeScope>,
     }
 
     impl NodeFuncDecl
     {
-        pub fn new(ident: Token, scope: NodeScope, declared_vars: Vec<FuncDecVar>) -> Self
+        pub fn new(ident: Token, scope: Option<NodeScope>, declared_vars: Vec<FuncDecVar>) -> Self
         {
             Self
             {
@@ -890,7 +890,7 @@ pub mod functions
             &self.declared_vars
         }
 
-        pub fn get_scope(&self) -> &NodeScope
+        pub fn get_scope(&self) -> &Option<NodeScope>
         {
             &self.scope
         }

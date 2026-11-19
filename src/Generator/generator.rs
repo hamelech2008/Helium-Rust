@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::process::exit;
 use crate::class_table::ClassTable;
-use crate::parser::ast_nodes::{NodeProg};
+use crate::parser::ast_nodes::{NodeProg, NodeScope};
 use crate::parser::ast_nodes::expr::{Exprs, NodeArrayAccess, NodeExpr, NodeMemberAccess, NodeTerneryExpr};
 use crate::parser::ast_nodes::functions::NodeFuncDecl;
 mod instructions;
@@ -113,6 +113,7 @@ impl Generator
     // functions generation
     fn gen_function(&mut self, func: &NodeFuncDecl)
     {
+        if func.get_scope().is_none() {return;}
         let initial_stack_size = self.stack_size; // save the stack size before the function
         self.vars.push(HashMap::new());
 
@@ -139,7 +140,7 @@ impl Generator
         });
 
 
-        self.gen_scope(func.get_scope());
+        self.gen_scope(&func.get_scope().clone().unwrap());
 
 
         instructions::movq(self, "%rbp", "%rsp");
