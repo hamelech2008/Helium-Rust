@@ -46,7 +46,10 @@ impl Generator
 
         self.gen_scope(node_if.get_scope());
 
-        instructions::jmp(self, &after_else_label);
+        if node_if.get_else_scope().is_some()
+        {
+            instructions::jmp(self, &after_else_label);
+        }
 
 
         instructions::insert_label(self, &after_if_label);
@@ -184,7 +187,13 @@ impl Generator
         //     }
         // });
 
+        instructions::push(self, "%r12");
+        instructions::movq(self, "%rsp", "%r12");
+        instructions::and(self, "$-16", "%rsp"); // alight rsp to 16 bytes
         instructions::call(self, &node_call_func.get_ident().data);
+
+        instructions::movq(self, "%r12", "%rsp");
+        instructions::pop(self, "%r12");
     }
 
     pub(super) fn gen_complex_assign_stmt(&mut self, node_complex_assign: &NodeStmtComplexAssign)

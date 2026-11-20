@@ -111,8 +111,13 @@ impl Generator
         //         instructions::pop(self, reg);
         //     }
         // });
-
+        instructions::push(self, "%r12");
+        instructions::movq(self, "%rsp", "%r12");
+        instructions::and(self, "$-16", "%rsp"); // alight rsp to 16 bytes
         instructions::call(self, &node_call.get_ident().data);
+        instructions::movq(self, "%r12", "%rsp");
+        instructions::pop(self, "%r12");
+        
         instructions::push(self, "%rax");
     }
 
