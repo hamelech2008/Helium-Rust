@@ -69,17 +69,17 @@ impl Parser
     fn parse_field(&mut self) -> Option<ClassDecVar>
     {
         // consume the 'dec' token
-        if self.try_consume(TokenType::Dec).is_none() {error_expected!("dec");}
+        if self.try_consume(TokenType::Dec).is_none() {error_expected!(self, "dec");}
 
         if let Some(ident) = self.try_consume(TokenType::Ident)
         {
             // consume the ':' token
-            if self.try_consume(TokenType::Colon).is_none() {error_expected!(":");}
+            if self.try_consume(TokenType::Colon).is_none() {error_expected!(self, ":");}
 
             if let Some(data_type) = self.parse_explicit_type()
             {
                 // consume the ';' token
-                if self.try_consume(TokenType::SemiColon).is_none() {error_expected!(";");}
+                if self.try_consume(TokenType::SemiColon).is_none() {error_expected!(self, ";");}
 
                 let dec_field = ClassDecVar::new(ident, data_type);
                 return Some(dec_field);

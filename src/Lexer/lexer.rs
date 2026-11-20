@@ -97,68 +97,94 @@ impl Lexer
         "#
         ).unwrap();
 
+
+        let mut last_offset = 0;
+        let mut row = 1;
+        let mut col = 1;
+
         // loop on the source code to add then tokens to the vector
         for caps in tokens_re.captures_iter(source_code)
         {
+            let m = caps.get(0).unwrap();
+
+            let skipped = &source_code[last_offset..m.start()];
+
+            for ch in skipped.chars()
+            {
+                if ch == '\n'
+                {
+                    row += 1;
+                    col = 1;
+                }
+                else
+                {
+                    col += 1;
+                }
+            }
+
+
+            let token_row = row;
+            let token_col = col;
+
             if let Some(m) = caps.name("class")
             {
-                self.add_token(TokenType::Class, m);
+                self.add_token(TokenType::Class, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("new")
             {
-                self.add_token(TokenType::New, m);
+                self.add_token(TokenType::New, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("dot")
             {
-                self.add_token(TokenType::Dot, m);
+                self.add_token(TokenType::Dot, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("dec")
             {
-                self.add_token(TokenType::Dec, m);
+                self.add_token(TokenType::Dec, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("for")
             {
-                self.add_token(TokenType::For, m);
+                self.add_token(TokenType::For, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("function")
             {
-                self.add_token(TokenType::Function, m);
+                self.add_token(TokenType::Function, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("return")
             {
-                self.add_token(TokenType::Return, m);
+                self.add_token(TokenType::Return, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("while")
             {
-                self.add_token(TokenType::While, m);
+                self.add_token(TokenType::While, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("ident")
             {
-                self.add_token(TokenType::Ident, m);
+                self.add_token(TokenType::Ident, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("if")
             {
-                self.add_token(TokenType::If, m);
+                self.add_token(TokenType::If, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("fetch")
             {
-                self.add_token(TokenType::Fetch, m);
+                self.add_token(TokenType::Fetch, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("else")
             {
-                self.add_token(TokenType::Else, m);
+                self.add_token(TokenType::Else, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("equals")
             {
-                self.add_token(TokenType::Equals, m);
+                self.add_token(TokenType::Equals, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("int")
             {
-                self.add_token(TokenType::IntLiteral, m);
+                self.add_token(TokenType::IntLiteral, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("char")
             {
-                self.add_token(TokenType::CharLiteral, m);
+                self.add_token(TokenType::CharLiteral, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("string")
             {
@@ -167,104 +193,123 @@ impl Lexer
                 {
                     token_type: TokenType::StringLiteral,
                     data: value.to_string(),
+                    row: token_row,
+                    col: token_col
                 });
             }
             else if let Some(m) = caps.name("semi")
             {
-                self.add_token(TokenType::SemiColon, m);
+                self.add_token(TokenType::SemiColon, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("addition")
             {
-                self.add_token(TokenType::Addition, m);
+                self.add_token(TokenType::Addition, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("subtraction")
             {
-                self.add_token(TokenType::Subtraction, m);
+                self.add_token(TokenType::Subtraction, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("multiplication")
             {
-                self.add_token(TokenType::Multiplication, m);
+                self.add_token(TokenType::Multiplication, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("division")
             {
-                self.add_token(TokenType::Division, m);
+                self.add_token(TokenType::Division, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("or")
             {
-                self.add_token(TokenType::Or, m);
+                self.add_token(TokenType::Or, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("and")
             {
-                self.add_token(TokenType::And, m);
+                self.add_token(TokenType::And, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("not_equal")
             {
-                self.add_token(TokenType::NotEqual, m);
+                self.add_token(TokenType::NotEqual, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("greater_or_equals")
             {
-                self.add_token(TokenType::GreaterOrEqual, m);
+                self.add_token(TokenType::GreaterOrEqual, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("lesser_or_equals")
             {
-                self.add_token(TokenType::LesserOrEqual, m);
+                self.add_token(TokenType::LesserOrEqual, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("lesser")
             {
-                self.add_token(TokenType::Lesser, m);
+                self.add_token(TokenType::Lesser, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("greater")
             {
-                self.add_token(TokenType::Greater, m);
+                self.add_token(TokenType::Greater, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("equals_to")
             {
-                self.add_token(TokenType::EqualsTo, m);
+                self.add_token(TokenType::EqualsTo, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("ternery")
             {
-                self.add_token(TokenType::Ternary, m);
+                self.add_token(TokenType::Ternary, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("left_bracket")
             {
-                self.add_token(TokenType::LeftBracket, m);
+                self.add_token(TokenType::LeftBracket, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("right_bracket")
             {
-                self.add_token(TokenType::RightBracket, m);
+                self.add_token(TokenType::RightBracket, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("left_curly")
             {
-                self.add_token(TokenType::LeftCurly, m);
+                self.add_token(TokenType::LeftCurly, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("right_curly")
             {
-                self.add_token(TokenType::RightCurly, m);
+                self.add_token(TokenType::RightCurly, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("left_square")
             {
-                self.add_token(TokenType::LeftSquare, m);
+                self.add_token(TokenType::LeftSquare, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("right_square")
             {
-                self.add_token(TokenType::RightSquare, m);
+                self.add_token(TokenType::RightSquare, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("colon")
             {
-                self.add_token(TokenType::Colon, m);
+                self.add_token(TokenType::Colon, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("comma")
             {
-                self.add_token(TokenType::Comma, m);
+                self.add_token(TokenType::Comma, m, token_row, token_col);
             }
+
+
+            for ch in m.as_str().chars()
+            {
+                if ch == '\n'
+                {
+                    row += 1;
+                    col = 1;
+                }
+                else
+                {
+                    col += 1;
+                }
+            }
+            last_offset = m.end();
         }
     }
 
-    fn add_token(&mut self, token: TokenType, m: Match)
+    fn add_token(&mut self, token: TokenType, m: Match, row: u32, col : u32)
     {
         self.tokens.push(token::Token {
             token_type: token,
-            data: m.as_str().to_string()
+            data: m.as_str().to_string(),
+            row,
+            col
         });
     }
 }

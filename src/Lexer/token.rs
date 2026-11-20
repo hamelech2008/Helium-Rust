@@ -20,5 +20,7 @@ pub enum TokenType
 pub struct Token
 {
     pub token_type: TokenType,
-    pub data: String
+    pub data: String,
+    pub row : u32,
+    pub col : u32
 }

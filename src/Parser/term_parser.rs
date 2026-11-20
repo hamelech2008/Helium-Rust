@@ -24,16 +24,16 @@ impl Parser
             {
 
                 // consume the '[' token
-                if self.try_consume(TokenType::LeftSquare).is_none() {error_expected!('[');}
+                if self.try_consume(TokenType::LeftSquare).is_none() {error_expected!(self, '[');}
 
                 if let Some(element_data_type) =self.parse_explicit_type()
                 {
-                    if self.try_consume(TokenType::Comma).is_none() {error_expected!(',');}
+                    if self.try_consume(TokenType::Comma).is_none() {error_expected!(self, ',');}
 
                     if let Some(size) = self.parse_expr(0)
                     {
                         // consume the ']' token
-                        if self.try_consume(TokenType::RightSquare).is_none() {error_expected!(']');}
+                        if self.try_consume(TokenType::RightSquare).is_none() {error_expected!(self, ']');}
 
                         let data_type = DataType::Array(Box::new(element_data_type));
 
@@ -89,19 +89,19 @@ impl Parser
     fn parse_object_creation_term(&mut self) -> Option<NodeTerm>
     {
         // consume the opening 'new' token and expecting a type
-        if self.try_consume(TokenType::New).is_none() {error_expected!("new");}
+        if self.try_consume(TokenType::New).is_none() {error_expected!(self, "new");}
 
         if let Some(ident) = self.try_consume(TokenType::Ident)
         {
             let data_type = DataType::Custom(0, ident.clone().data);
 
             // consume the '(' token
-            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!("(");}
+            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!(self, "(");}
 
             let func_args = self.get_func_args(); // consume the constructor args
 
             // consume the ')' token
-            if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+            if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(self, ")");}
 
             let obj_creation = NodeTermNewObj::new(ident, data_type.clone(), func_args);
             let term = NodeTerm::new(Terms::NodeTermNewObj(obj_creation), data_type);
@@ -114,7 +114,7 @@ impl Parser
     {
         let mut elements = Vec::new();
         // consume the opening '[' token and expecting a type
-        if self.try_consume(TokenType::LeftSquare).is_none() {error_expected!('[');}
+        if self.try_consume(TokenType::LeftSquare).is_none() {error_expected!(self, '[');}
         if self.try_consume(TokenType::RightSquare).is_some() {type_error!("type");}
 
         loop
@@ -198,7 +198,7 @@ impl Parser
     fn parse_bracket_term(&mut self, expr: NodeExpr) -> Option<NodeTerm>
     {
         // consume the ')' token
-        if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+        if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(self, ")");}
         let data_type = expr.get_data_type();
 
         let term_bracket = Terms::Bracket(NodeTermBracket::new(expr));
@@ -210,13 +210,13 @@ impl Parser
         if let Some(ident) = self.try_consume(TokenType::Ident)
         {
             // consume the '(' token
-            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!("(");}
+            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!(self, "(");}
 
             let func_args = self.get_func_args();
 
 
             // consume the ')' token
-            if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+            if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(self, ")");}
 
             let node_call = NodeTermFuncCall::new(ident, func_args);
 

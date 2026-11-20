@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::process::exit;
 use crate::parser::ast_nodes::DataType;
 
 #[derive(Clone, Debug)]
@@ -34,13 +35,21 @@ impl SymbolTable
         let data_symbol = match self.symbol_table.get(ident).cloned()
         {
             Some(datatype) => datatype,
-            None => panic!("SymbolTable::get: Unknown identifier {}", ident)
+            None =>
+                {
+                    eprintln!("Parse Error: Unknown identifier '{}'", ident);
+                    exit(1);
+                }
         };
 
         match data_symbol
         {
             Symbol::Variable(datatype) => datatype,
-            _ => panic!("SymbolTable::get: Unknown identifier {}", ident)
+            _ =>
+                {
+                    eprintln!("Parse Error: Unknown identifier '{}'", ident);
+                    exit(1);
+                }
         }
     }
 
@@ -49,13 +58,19 @@ impl SymbolTable
         let data_symbol = match self.symbol_table.get(ident)
         {
             Some(symbol) => symbol,
-            None => panic!("SymbolTable::get: Unknown identifier {}", ident),
+            None => {
+                eprintln!("Parse Error: Unknown identifier '{}'", ident);
+                exit(1);
+            },
         };
 
         match data_symbol
         {
             Symbol::Function { return_type } => return_type.clone(),
-            _ => panic!("SymbolTable::get: {} is not a function", ident),
+            _ => {
+                eprintln!("Parse Error: '{}' is not a function", ident);
+                exit(1);
+            },
         }
     }
 

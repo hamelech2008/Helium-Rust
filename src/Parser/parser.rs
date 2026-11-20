@@ -28,9 +28,13 @@ macro_rules! check_next_tokens {
 
 #[macro_export]
 macro_rules! error_expected {
-    ($token:expr) =>
+    ($this:ident, $token:expr) =>
     {
-        eprintln!("Parse Error: expected token '{}' at line <ADD LINE>", $token);
+        let previous = $this.peek_offset(-1).unwrap();
+        let row = previous.row;
+        let col = previous.col + previous.data.chars().count() as u32;
+
+        eprintln!("Parse Error: expected token '{}' at {}:{}", $token, row, col);
         exit(-1);
     }
 }
@@ -91,11 +95,11 @@ impl Parser
     fn parse_function_param(&mut self) -> Option<FuncDecVar> // parse the params of a function when declared
     {
         // consume the 'dec' token
-        if self.try_consume(TokenType::Dec).is_none() {error_expected!("dec");}
+        if self.try_consume(TokenType::Dec).is_none() {error_expected!(self, "dec");}
         if let Some(ident) = self.try_consume(TokenType::Ident)
         {
             // consume the ':' token
-            if self.try_consume(TokenType::Colon).is_none() {error_expected!(":");}
+            if self.try_consume(TokenType::Colon).is_none() {error_expected!(self, ":");}
 
             if let Some(data_type) = self.parse_explicit_type()
             {
@@ -115,13 +119,13 @@ impl Parser
     fn parse_function(&mut self) -> Option<NodeFuncDecl> // parse a function declaration
     {
         // consume the 'function' token
-        if self.try_consume(TokenType::Function).is_none() {error_expected!("function");}
+        if self.try_consume(TokenType::Function).is_none() {error_expected!(self, "function");}
 
         if let Some(ident) = self.try_consume(TokenType::Ident)
         {
 
             // consume the '(' token
-            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!("(");}
+            if self.try_consume(TokenType::LeftBracket).is_none() {error_expected!(self, "(");}
 
 
             let mut func_params = Vec::new();
@@ -139,20 +143,20 @@ impl Parser
                 {
 
                     // consume the ',' token
-                    if self.try_consume(TokenType::Comma).is_none() {error_expected!(",");}
+                    if self.try_consume(TokenType::Comma).is_none() {error_expected!(self, ",");}
                 }
 
             }
 
             // consume the ')' token
-            if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+            if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(self, ")");}
 
 
             // check for "-> return_type" tokens
             if check_next_tokens!(self, TokenType::Subtraction, TokenType::Greater, TokenType::Ident)
             {
-                if self.try_consume(TokenType::Subtraction).is_none() {error_expected!("-");}
-                if self.try_consume(TokenType::Greater).is_none() {error_expected!(">");}
+                if self.try_consume(TokenType::Subtraction).is_none() {error_expected!(self, "-");}
+                if self.try_consume(TokenType::Greater).is_none() {error_expected!(self, ">");}
                 if let Some(return_data_type) = self.parse_explicit_type()
                 {
                     let symbol = Symbol::Function {return_type: return_data_type};
@@ -193,7 +197,7 @@ impl Parser
             if self.try_peek(TokenType::Comma)
             {
                 // consume the ',' token
-                if self.try_consume(TokenType::Comma).is_none() {error_expected!(",");}
+                if self.try_consume(TokenType::Comma).is_none() {error_expected!(self, ",");}
             }
 
         }
@@ -212,11 +216,11 @@ impl Parser
         if token.data == "Array"
         {
             // if after the keyword there isn't a data type, return None
-            if self.try_consume(TokenType::Lesser).is_none() {error_expected!('<');}
+            if self.try_consume(TokenType::Lesser).is_none() {error_expected!(self, '<');}
 
             // consume the inner type and make sure the next token is '>'
             let inner_type = self.parse_explicit_type().unwrap();
-            if self.try_consume(TokenType::Greater).is_none() {error_expected!('>');}
+            if self.try_consume(TokenType::Greater).is_none() {error_expected!(self, '>');}
 
             // call it recursively
             return Some(DataType::Array(Box::new(inner_type)));
@@ -319,7 +323,7 @@ impl Parser
                 Operator::TerneryOp =>
                     {
                         // consume the ':' token for ternery, e.g: 1 ? 2 : 3
-                        if self.try_consume(TokenType::Colon).is_none() {error_expected!(":");}
+                        if self.try_consume(TokenType::Colon).is_none() {error_expected!(self, ":");}
 
                         // parse the ternery "false" branch
                         if let Some(false_expr_branch) = self.parse_expr(next_min_prec)
@@ -367,7 +371,7 @@ impl Parser
                         if let Some(index) = self.parse_expr(0)
                         {
                             // consume the ']' token
-                            if self.try_consume(TokenType::RightSquare).is_none() {error_expected!("]");}
+                            if self.try_consume(TokenType::RightSquare).is_none() {error_expected!(self, "]");}
 
                             // get the type of the element
                             let element_type = match expr.get_data_type()
@@ -400,7 +404,7 @@ impl Parser
                                     let mut args = self.get_func_args();
 
                                     // consume the ')' token
-                                    if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(")");}
+                                    if self.try_consume(TokenType::RightBracket).is_none() {error_expected!(self, ")");}
 
                                     args.push(expr.clone());
 
@@ -425,7 +429,7 @@ impl Parser
                                     }
                                 }
                             }
-                            else {error_expected!("member after '.'");}
+                            else {error_expected!(self, "ident");}
                         }
                     }
                 _ => return Some(expr)
@@ -445,7 +449,7 @@ impl Parser
                 node_scope.push_stmt(stmt);
                 return node_scope;
             }
-            error_expected!("scope");
+            error_expected!(self, "scope");
         }
 
         let mut node_scope = NodeScope::new();
@@ -456,7 +460,7 @@ impl Parser
         }
 
         // consume the "}" token
-        if self.try_consume(TokenType::RightCurly).is_none() {error_expected!("}");}
+        if self.try_consume(TokenType::RightCurly).is_none() {error_expected!(self, "}");}
 
         node_scope
     }
