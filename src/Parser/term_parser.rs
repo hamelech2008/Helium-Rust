@@ -115,7 +115,7 @@ impl Parser
         let mut elements = Vec::new();
         // consume the opening '[' token and expecting a type
         if self.try_consume(TokenType::LeftSquare).is_none() {error_expected!(self, '[');}
-        if self.try_consume(TokenType::RightSquare).is_some() {type_error!("type");}
+        if self.try_consume(TokenType::RightSquare).is_some() {type_error!(self, "any");}
 
         loop
         {
@@ -137,7 +137,7 @@ impl Parser
         {
             if element.get_data_type() != element_type
             {
-                type_error!("test"); // TODO: replace with proper type
+                type_error!(self, String::from(element_type));
             }
         }
 

@@ -41,9 +41,13 @@ macro_rules! error_expected {
 
 #[macro_export]
 macro_rules! type_error {
-    ($token:expr) =>
+    ($this:ident, $token:expr) =>
     {
-        eprintln!("Parse Error: expected type '{}' at line <ADD LINE>", $token);
+        let previous = $this.peek_offset(-1).unwrap();
+        let row = previous.row;
+        let col = previous.col + previous.data.chars().count() as u32;
+
+        eprintln!("Parse Error: expected type '{}' at {}:{}", $token, row, col);
         exit(-1);
     }
 }
@@ -306,7 +310,7 @@ impl Parser
 
                         if res_type.is_none()
                         {
-                            type_error!(String::from(expr_rhs.get_data_type()));
+                            type_error!(self, String::from(expr_rhs.get_data_type()));
                         }
 
                         let res_type = res_type.unwrap();
@@ -330,7 +334,7 @@ impl Parser
                         {
                             if expr_lhs.get_data_type() != expr_lhs.get_data_type()
                             {
-                                type_error!("test"); // TODO: replace with actual type
+                                type_error!(self, "test"); // TODO: replace with actual type
                             }
 
                             let ternery_node = NodeTerneryExpr::new(
