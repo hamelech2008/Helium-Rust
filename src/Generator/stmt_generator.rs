@@ -162,15 +162,27 @@ impl Generator
 
     pub(super) fn gen_func_call_stmt(&mut self, node_call_func: &NodeStmtFuncCall)
     {
-        node_call_func.get_args().iter().enumerate().for_each(|(i, var)| {
-            let reg = FUNC_PARAM_REGS[i];
+        for var in node_call_func.get_args()
+        {
+            self.gen_expr(var);
+        }
 
-            if i < 6
-            {
-                self.gen_expr(var);
-                instructions::pop(self, reg);
-            }
-        });
+        // pop first 6 arguments to system V calling registers
+        for i in (0..node_call_func.get_args().len().min(6)).rev()
+        {
+            let reg = FUNC_PARAM_REGS[i];
+            instructions::pop(self, reg);
+        }
+
+        // node_call_func.get_args().iter().enumerate().for_each(|(i, var)| {
+        //     let reg = FUNC_PARAM_REGS[i];
+        //
+        //     if i < 6
+        //     {
+        //         // self.gen_expr(var);
+        //         instructions::pop(self, reg);
+        //     }
+        // });
 
         instructions::call(self, &node_call_func.get_ident().data);
     }

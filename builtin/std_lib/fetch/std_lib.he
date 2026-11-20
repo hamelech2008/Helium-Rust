@@ -5,4 +5,3 @@ fetch <io>
 function _open(dec path: Array<Char>, dec flags : Integer, dec mode : Integer) -> Integer;
 function _read(dec fd: Integer, dec buff: Array<Char>, dec size: Integer) -> Integer;
 function _write(dec fd: Integer, dec buff: Array<Char>, dec size: Integer) -> Integer;
-function input() -> String;

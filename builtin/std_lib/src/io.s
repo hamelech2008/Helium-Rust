@@ -1,5 +1,6 @@
 .global print
 .global input
+.global println
 
 
 .section .text
@@ -28,6 +29,34 @@ print:
         movq %rbp, %rsp
         popq %rbp
         retq
+
+
+println:
+	pushq %rbp
+	movq %rsp, %rbp
+	pushq %rdi
+	movq 0(%rsp), %rax
+	pushq %rax
+	popq %rdi
+	call print
+	movq $2, %rdi
+	call malloc
+	pushq %rax
+	movq $10, %rbx
+	movb %bl, 0(%rax)
+	movq $16, %rdi
+	call malloc
+	popq %rdi
+	pushq %rax
+	movq $2, %rsi
+	movq %rax, %rdx
+	call String_String
+	popq %rdi
+	call print
+	addq $0, %rsp
+	movq %rbp, %rsp
+	popq %rbp
+	retq
 
 
 input:

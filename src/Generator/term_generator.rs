@@ -43,23 +43,28 @@ impl Generator
 
         instructions::push(self, "%rax");
 
-        for (i, c) in node_string_literal.get_value().data.chars().enumerate()
+        let data = node_string_literal.get_value().data
+            .replace("\\n", "\n")
+            .replace("\\t", "\t")
+            .replace("\\\\", "\\")
+            .replace("\\\"", "\"");
+
+        for (i, c) in data.chars().enumerate()
         {
-            instructions::movq_immediate(self, & format!("'{}'",c), "%rbx");
+            instructions::movq_immediate(self, &format!("{}", c as u32), "%rbx");
             instructions::movb(self, "%bl", &format!("{}(%rax)", i));
         }
-
 
         instructions::movq_immediate(self, "16", "%rdi");
         instructions::call(self, "malloc");
 
-        instructions::pop(self, "%rdi");
+        instructions::pop(self, "%rdi"); // string content addr
 
         instructions::push(self, "%rax");
 
-
+        // string size
         instructions::movq_immediate(self, &node_string_literal.get_value().data.len().to_string(), "%rsi");
-        instructions::movq(self, "%rax", "%rdx");
+        instructions::movq(self, "%rax", "%rdx"); // string object addr
         instructions::call(self, "String_String");
 
     }
@@ -85,15 +90,27 @@ impl Generator
 
     pub(super) fn gen_call_term(&mut self, node_call: &NodeTermFuncCall)
     {
-        node_call.get_args().iter().enumerate().for_each(|(i, var)| {
+        for arg in node_call.get_args()
+        {
+            self.gen_expr(arg);
+        }
+        
+        // pop first 6 arguments to system V calling registers
+        for i in (0..node_call.get_args().len().min(6)).rev()
+        {
             let reg = FUNC_PARAM_REGS[i];
+            instructions::pop(self, reg);
+        }
 
-            if i < 6
-            {
-                self.gen_expr(var);
-                instructions::pop(self, reg);
-            }
-        });
+        // node_call.get_args().iter().enumerate().for_each(|(i, var)| {
+        //     
+        // 
+        //     if i < 6
+        //     {
+        //         // self.gen_expr(var);
+        //         instructions::pop(self, reg);
+        //     }
+        // });
 
         instructions::call(self, &node_call.get_ident().data);
         instructions::push(self, "%rax");

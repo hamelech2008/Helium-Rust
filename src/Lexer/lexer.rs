@@ -73,7 +73,7 @@ impl Lexer
         | (?P<not_equal>!=)
         | (?P<equals_to>==)
         | (?P<equals>=)
-        | (?P<char>'[^']')
+        | (?P<char>'(?:\\.|[^'\\])')
         | (?P<int>-?\d+)
         | (?P<string>"([^"\\]|\\.)*")
         | (?P<semi>;)
