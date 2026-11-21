@@ -3,7 +3,7 @@ use std::process::exit;
 use crate::generator::{instructions, Generator, FUNC_PARAM_REGS};
 use crate::parser::ast_nodes::expr::{Exprs, NodeArrayAccess, NodeExpr, NodeMemberAccess};
 use crate::parser::ast_nodes::NodeScope;
-use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtComplexAssign, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, NodeStmtWhileLoop, Stmts};
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtComplexAssign, NodeStmtComplexCall, NodeStmtDec, NodeStmtElse, NodeStmtForLoop, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, NodeStmtWhileLoop, Stmts};
 
 impl Generator
 {
@@ -19,7 +19,8 @@ impl Generator
             Stmts::NodeStmtWhileLoop(node_while_loop) => self.gen_while_loop_stmt(node_while_loop),
             Stmts::NodeStmtReturn(node_return) => self.gen_return_stmt(node_return),
             Stmts::NodeStmtFuncCall(node_call) => self.gen_func_call_stmt(node_call),
-            Stmts::NodeStmtComplexAssign(node_assign) => self.gen_complex_assign_stmt(node_assign)
+            Stmts::NodeStmtComplexAssign(node_assign) => self.gen_complex_assign_stmt(node_assign),
+            Stmts::NodeStmtComplexCall(node_call) => self.gen_complex_call_stmt(node_call),
         }
     }
 
@@ -157,6 +158,10 @@ impl Generator
             self.gen_expr(expr);
             instructions::pop(self, "%rax");
         }
+        else
+        {
+            instructions::movq_immediate(self, "0", "%rax");
+        }
 
         instructions::movq(self, "%rbp", "%rsp");
         instructions::pop(self, "%rbp");
@@ -195,6 +200,13 @@ impl Generator
         instructions::movq(self, "%r12", "%rsp");
         instructions::pop(self, "%r12");
     }
+
+    pub fn gen_complex_call_stmt(&mut self, node_complex_call: &NodeStmtComplexCall)
+    {
+        self.gen_expr(node_complex_call.get_expr());
+    }
+
+
 
     pub(super) fn gen_complex_assign_stmt(&mut self, node_complex_assign: &NodeStmtComplexAssign)
     {

@@ -182,7 +182,7 @@ impl Parser
 
     fn parse_ident_term(&self, ident: Token) -> Option<NodeTerm>
     {
-        let data_type = self.symbol_table.get_variable(&ident.data);
+        let data_type = self.symbol_table.get_variable_data_type(&ident.data);
         let node_term_ident = ast_nodes::term::NodeTermIdent
         {
             ident,
@@ -220,7 +220,7 @@ impl Parser
 
             let node_call = NodeTermFuncCall::new(ident, func_args);
 
-            let data_type = self.symbol_table.get_function(&node_call.get_ident().data);
+            let data_type = self.symbol_table.get_function_data_type(&node_call.get_ident().data);
             let term = NodeTerm::new(Terms::NodeTermFuncCall(node_call), data_type);
             return Some(term);
         }

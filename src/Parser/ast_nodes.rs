@@ -775,6 +775,29 @@ pub mod stmt
             &self.expr
         }
     }
+    
+    
+    #[derive(Debug, Clone)]
+    pub struct NodeStmtComplexCall
+    {
+        expr: NodeExpr,
+    }
+    
+    impl NodeStmtComplexCall
+    {
+        pub fn new(expr: NodeExpr) -> Self
+        {
+            Self
+            {
+                expr
+            }
+        }
+        
+        pub fn get_expr(&self) -> &NodeExpr
+        {
+            &self.expr
+        }
+    }
     #[derive(Debug, Clone)]
     pub enum Stmts
     {
@@ -782,7 +805,7 @@ pub mod stmt
         NodeStmtAssign(NodeStmtAssign),
         NodeStmtForLoop(NodeStmtForLoop), NodeStmtWhileLoop(NodeStmtWhileLoop),
         NodeStmtReturn(NodeStmtReturn), NodeStmtFuncCall(NodeStmtFuncCall),
-        NodeStmtComplexAssign(NodeStmtComplexAssign)
+        NodeStmtComplexAssign(NodeStmtComplexAssign), NodeStmtComplexCall(NodeStmtComplexCall),
     }
     #[derive(Debug, Clone)]
     pub struct NodeStmt

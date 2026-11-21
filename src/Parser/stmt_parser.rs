@@ -1,7 +1,7 @@
 use std::process::exit;
 use crate::lexer::token::TokenType;
 use crate::parser::ast_nodes::stmt;
-use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtComplexAssign, NodeStmtElse, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, Stmts};
+use crate::parser::ast_nodes::stmt::{NodeStmt, NodeStmtAssign, NodeStmtComplexAssign, NodeStmtComplexCall, NodeStmtElse, NodeStmtFuncCall, NodeStmtIf, NodeStmtReturn, Stmts};
 use crate::parser::ast_nodes::stmt::Stmts::{NodeStmtForLoop, NodeStmtWhileLoop};
 use crate::parser::Parser;
 use crate::check_next_tokens;
@@ -53,10 +53,19 @@ impl Parser
 
 
 
-        // check for a complex assignment statement
-        if let Some(assigned_expr) = self.parse_expr(0) && self.try_peek(TokenType::Equals)
+        // check for a complex assignment statement or a complex method call
+        if let Some(complex_stmt) = self.parse_expr(0)
         {
-            return self.parse_complex_assignment_stmt(assigned_expr, expect_semi_colon);
+            if self.try_peek(TokenType::Equals)
+            {
+                return self.parse_complex_assignment_stmt(complex_stmt, expect_semi_colon);
+            }
+            if self.try_peek(TokenType::SemiColon)
+            {
+                    let stmt = NodeStmt::new(Stmts::NodeStmtComplexCall(NodeStmtComplexCall::new(complex_stmt)));
+                    self.consume(); // consume the ';' token
+                    return Some(stmt);
+            }
 
         }
         None

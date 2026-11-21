@@ -142,7 +142,7 @@ impl Generator
 
         self.gen_scope(&func.get_scope().clone().unwrap());
 
-
+        instructions::movq_immediate(self, "0", "%rax");
         instructions::movq(self, "%rbp", "%rsp");
         instructions::pop(self, "%rbp");
         instructions::retq(self);

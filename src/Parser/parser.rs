@@ -415,7 +415,7 @@ impl Parser
                                     let mut node_method_access = NodeTermFuncCall::new(member.clone(), args);
                                     if let Some(method) = self.class_table.get_class_method(&expr, &member)
                                     {
-                                        let method_data_type = self.symbol_table.get_function(&method.get_ident().data);
+                                        let method_data_type = self.symbol_table.get_function_data_type(&method.get_ident().data);
                                         node_method_access.prefix_ident(&self.class_table.get_class_name(&expr));
                                         expr = NodeExpr::new(Exprs::Term(NodeTerm::new(Terms::NodeTermFuncCall(node_method_access), method_data_type.clone())), method_data_type);
                                     }

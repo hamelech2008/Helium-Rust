@@ -30,7 +30,7 @@ impl SymbolTable
         self.symbol_table.insert(ident, datatype);
     }
 
-    pub fn get_variable(&self, ident: &str) -> DataType
+    pub fn get_variable_data_type(&self, ident: &str) -> DataType
     {
         let data_symbol = match self.symbol_table.get(ident).cloned()
         {
@@ -53,14 +53,13 @@ impl SymbolTable
         }
     }
 
-    pub fn get_function(&self, ident: &str) -> DataType
+    pub fn get_function_data_type(&self, ident: &str) -> DataType
     {
         let data_symbol = match self.symbol_table.get(ident)
         {
             Some(symbol) => symbol,
             None => {
-                eprintln!("Parse Error: Unknown identifier '{}'", ident);
-                exit(1);
+                return DataType::Integer; // the default value of every function is Integer
             },
         };
 
