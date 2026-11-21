@@ -20,7 +20,7 @@ fn main()
     // let start = Instant::now();
 
     let args: Vec<String> = env::args().collect();
-    if args.len() != 3
+    if args.len() != 3 && args.len() != 4
     {
         println!("Error: Invalid number of arguments!");
         exit(1);
@@ -59,6 +59,11 @@ fn main()
         eprintln!("Assembler error:\n{}", String::from_utf8_lossy(&out.stderr));
     }
 
+
+    if &args[3] == "-S"
+    {
+        return;
+    }
 
     // assemble and link with all the libraries using gcc
     // TODO: replace linking with ld

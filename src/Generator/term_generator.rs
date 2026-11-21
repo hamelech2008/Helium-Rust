@@ -158,21 +158,39 @@ impl Generator
         instructions::call(self, "malloc");
         instructions::push(self, "%rax");
 
-        node_new_obj.get_args().iter().enumerate().for_each(|(i, var)| {
-            let reg = FUNC_PARAM_REGS[i];
+        for element in node_new_obj.get_args().iter()
+        {
+            self.gen_expr(element);
+        }
 
-            if i < 6
-            {
-                self.gen_expr(var);
-                instructions::pop(self, reg);
-            }
-        });
+        for i in (0..node_new_obj.get_args().len().min(6)).rev()
+        {
+            let reg = FUNC_PARAM_REGS[i];
+            instructions::pop(self, reg);
+        }
+
+
+        // node_new_obj.get_args().iter().enumerate().for_each(|(i, var)| {
+        //     let reg = FUNC_PARAM_REGS[i];
+        //
+        //     if i < 6
+        //     {
+        //         self.gen_expr(var);
+        //         instructions::pop(self, reg);
+        //     }
+        // });
 
         let class_name = &node_new_obj.get_ident().data;
         
         // pass "this" as a pointer to the object
-        instructions::movq(self, "0(%rsp)", FUNC_PARAM_REGS[node_new_obj.get_args().len()]); 
-        instructions::call(self, &format!("{class_name}_{class_name}"))
+        instructions::movq(self, "0(%rsp)", FUNC_PARAM_REGS[node_new_obj.get_args().len()]);
+
+        instructions::push(self, "%r12");
+        instructions::movq(self, "%rsp", "%r12");
+        instructions::and(self, "$-16", "%rsp"); // alight rsp to 16 bytes
+        instructions::call(self, &format!("{class_name}_{class_name}"));
+        instructions::movq(self, "%r12", "%rsp");
+        instructions::pop(self, "%r12");
 
     }
 }
