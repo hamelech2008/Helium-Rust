@@ -7,7 +7,8 @@ pub mod token_preprocessor;
 pub(crate) mod token;
 
 
-pub fn binary_prec(token_type: TokenType) -> Option<i32> {
+pub fn binary_prec(token_type: TokenType) -> Option<i32>
+{
     match token_type
     {
         TokenType::Ternary => Some(0),
@@ -30,6 +31,7 @@ pub fn binary_prec(token_type: TokenType) -> Option<i32> {
 
         TokenType::Division => Some(6),
         TokenType::Multiplication => Some(6),
+        TokenType::Modulo => Some(6),
 
         _ => None
     }
@@ -86,6 +88,7 @@ impl Lexer
         | (?P<ternery>\?)
         | (?P<addition>\+)
         | (?P<multiplication>\*)
+        | (?P<modulo>%)
         | (?P<subtraction>-)
         | (?P<division>/)
         | (?P<left_bracket>\()
@@ -208,6 +211,10 @@ impl Lexer
             else if let Some(m) = caps.name("subtraction")
             {
                 self.add_token(TokenType::Subtraction, m, token_row, token_col);
+            }
+            else if let Some(m) = caps.name("modulo")
+            {
+                self.add_token(TokenType::Modulo, m, token_row, token_col);
             }
             else if let Some(m) = caps.name("multiplication")
             {

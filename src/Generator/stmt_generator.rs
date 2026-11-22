@@ -215,8 +215,15 @@ impl Generator
 
         instructions::pop(self, "%rax"); // the value to assign
         instructions::pop(self, "%rbx"); // the value to assign to
+        let size = node_complex_assign.get_assigned_expr().get_data_type().get_size();
+        match size
+        {
+            8 => instructions::movq(self,"%rax", "(%rbx)"),
+            1 => instructions::movb(self, "%al", "(%rbx)"),
+            _ => {}
+        }
 
-        instructions::movq(self,"%rax", "(%rbx)");
+
     }
 
 

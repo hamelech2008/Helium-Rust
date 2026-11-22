@@ -305,7 +305,7 @@ pub mod expr
     use crate::parser::ast_nodes::{term, DataType};
 
     #[derive(Clone, Debug)]
-    pub enum BinOp { Addition, Subtraction, Division, Multiplication, Lesser, Greater, EqualsTo, GreaterOrEqual, LesserOrEqual, NotEqual }
+    pub enum BinOp { Addition, Subtraction, Division, Modulo, Multiplication, Lesser, Greater, EqualsTo, GreaterOrEqual, LesserOrEqual, NotEqual }
     #[derive(Clone, Debug)]
     pub struct NodeBinExpr
     {

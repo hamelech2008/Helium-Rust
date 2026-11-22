@@ -12,6 +12,7 @@ impl Generator
             BinOp::Subtraction => self.gen_bin_expr_sub(bin_expr),
             BinOp::Multiplication => self.gen_bin_expr_mul(bin_expr),
             BinOp::Division => self.gen_bin_expr_div(bin_expr),
+            BinOp::Modulo => self.gen_bin_expr_modulo(bin_expr),
             BinOp::Lesser => self.gen_bin_expr_less(bin_expr),
             BinOp::Greater => self.gen_bin_expr_greater(bin_expr),
             BinOp::EqualsTo => self.gen_bin_expr_equals_to(bin_expr),
@@ -68,6 +69,20 @@ impl Generator
 
     }
 
+
+    pub(super) fn gen_bin_expr_modulo(&mut self, bin_expr_modulo: &NodeBinExpr)
+    {
+        // Same order as your division: rhs first, then lhs,
+        // so that lhs ends up in rax and rhs in rbx.
+        self.gen_expr(bin_expr_modulo.get_rhs());
+        self.gen_expr(bin_expr_modulo.get_lhs());
+
+        instructions::pop(self, "%rax"); // lhs (dividend)
+        instructions::pop(self, "%rbx"); // rhs (divisor)
+
+        instructions::divq(self, "%rbx"); // remainder in rax
+        instructions::push(self, "%rdx"); // result of % is the remainder
+    }
     pub(super) fn gen_bin_expr_less(&mut self, bin_expr_less: &NodeBinExpr)
     {
         self.gen_expr(bin_expr_less.get_lhs());

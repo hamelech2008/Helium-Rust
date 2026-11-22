@@ -287,6 +287,7 @@ impl Parser
                 TokenType::Subtraction => Operator::BinOp(BinOp::Subtraction),
                 TokenType::Multiplication => Operator::BinOp(BinOp::Multiplication),
                 TokenType::Division => Operator::BinOp(BinOp::Division),
+                TokenType::Modulo => Operator::BinOp(BinOp::Modulo),
                 TokenType::LesserOrEqual => Operator::BinOp(BinOp::LesserOrEqual),
                 TokenType::GreaterOrEqual => Operator::BinOp(BinOp::GreaterOrEqual),
                 TokenType::Lesser => Operator::BinOp(BinOp::Lesser),

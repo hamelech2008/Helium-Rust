@@ -7,7 +7,7 @@ pub enum TokenType
     For, While, If, Else, Function, Return,
     Dec,
     Ident,
-    Equals, Greater, Lesser, Addition, Multiplication, Subtraction,
+    Equals, Greater, Lesser, Addition, Multiplication, Subtraction, Modulo,
     Division, EqualsTo, GreaterOrEqual, LesserOrEqual, NotEqual,
     And, Or,
     Ternary, Colon,
